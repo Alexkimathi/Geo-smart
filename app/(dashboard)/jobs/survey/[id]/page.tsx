@@ -4,15 +4,15 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import {
   ChevronLeft, Calendar, MapPin, User, FileText,
-  Hash, ClipboardList, Pencil,
+  Hash, ClipboardList, Pencil, Receipt,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import { formatDate } from '@/lib/utils'
+import { formatDate, formatCurrency } from '@/lib/utils'
 import { SurveyStatusStepper } from './SurveyStatusStepper'
 import { JobActions } from '@/components/jobs/JobActions'
 import { JobNotes } from '@/components/jobs/JobNotes'
 import { deleteSurveyJobAction, archiveSurveyJobAction } from '@/app/(dashboard)/jobs/survey/actions'
-import type { SurveyJob, Client, JobNoteWithProfile } from '@/types/database'
+import type { SurveyJob, Client, JobNoteWithProfile, Expense } from '@/types/database'
 
 const SURVEY_TYPE_LABELS: Record<string, string> = {
   Topo: 'Topographic Survey',
@@ -30,13 +30,15 @@ const STATUS_COLORS: Record<string, 'gray' | 'blue' | 'yellow' | 'purple' | 'gre
   'On Hold': 'gray',
 }
 
+export const dynamic = 'force-dynamic'
+
 export default async function SurveyJobDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const db = createServiceClient()
   const auth = await createClient()
   const { data: { user } } = await auth.auth.getUser()
 
-  const [{ data: job }, { data: profile }, { data: notes }] = await Promise.all([
+  const [{ data: job }, { data: profile }, { data: notes }, { data: expenses }, { data: invoices }] = await Promise.all([
     db
       .from('survey_jobs')
       .select('*, clients(id, name, company, phone, email, site_location, pin, contact_person)')
@@ -47,7 +49,7 @@ export default async function SurveyJobDetailPage({ params }: { params: Promise<
         }) | null
       }>,
     user
-      ? db.from('profiles').select('role').eq('id', user.id).single() as unknown as Promise<{ data: { role: string } | null }>
+      ? db.from('profiles').select('role, full_name').eq('id', user.id).single() as unknown as Promise<{ data: { role: string; full_name: string } | null }>
       : Promise.resolve({ data: null }),
     db
       .from('job_notes')
@@ -55,9 +57,27 @@ export default async function SurveyJobDetailPage({ params }: { params: Promise<
       .eq('job_id', id)
       .eq('job_type', 'survey')
       .order('created_at', { ascending: false }) as unknown as Promise<{ data: JobNoteWithProfile[] | null }>,
+    db
+      .from('expenses')
+      .select('*')
+      .eq('job_id', id)
+      .eq('job_type', 'survey')
+      .order('expense_date', { ascending: false }) as unknown as Promise<{ data: Expense[] | null }>,
+    db
+      .from('finance_documents')
+      .select('total, status')
+      .eq('job_id', id)
+      .eq('job_type', 'survey')
+      .eq('type', 'Invoice') as unknown as Promise<{ data: { total: number; status: string }[] | null }>,
   ])
 
   if (!job) notFound()
+
+  const totalInvoiced = (invoices ?? []).reduce((s, inv) => s + inv.total, 0)
+  const totalCollected = 0 // payments not fetched here; shown on invoice detail
+  const totalExpenses = (expenses ?? []).reduce((s, e) => s + e.amount, 0)
+  const netMargin = totalInvoiced - totalExpenses
+  const marginPct = totalInvoiced > 0 ? (netMargin / totalInvoiced) * 100 : null
 
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto">
@@ -196,12 +216,57 @@ export default async function SurveyJobDetailPage({ params }: { params: Promise<
             </div>
           </div>
 
+          {/* Expenses */}
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+                <Receipt className="w-4 h-4 text-gray-400" />Expenses
+              </h2>
+              <Link href="/finance/expenses" className="text-xs text-blue-600 hover:underline">
+                Add expense
+              </Link>
+            </div>
+            {expenses && expenses.length > 0 ? (
+              <>
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-100">
+                      <th className="text-left pb-2 text-xs font-medium text-gray-400 uppercase tracking-wide">Date</th>
+                      <th className="text-left pb-2 text-xs font-medium text-gray-400 uppercase tracking-wide">Category</th>
+                      <th className="text-left pb-2 text-xs font-medium text-gray-400 uppercase tracking-wide">Description</th>
+                      <th className="text-right pb-2 text-xs font-medium text-gray-400 uppercase tracking-wide">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {expenses.map((e) => (
+                      <tr key={e.id}>
+                        <td className="py-2 text-gray-500 whitespace-nowrap">{formatDate(e.expense_date)}</td>
+                        <td className="py-2">
+                          <span className="text-xs font-medium text-gray-600 bg-gray-100 rounded px-1.5 py-0.5">{e.category}</span>
+                        </td>
+                        <td className="py-2 text-gray-700">{e.description}</td>
+                        <td className="py-2 text-right font-medium text-gray-900">{formatCurrency(e.amount)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div className="mt-3 pt-3 border-t border-gray-100 flex justify-between text-sm font-semibold text-gray-900">
+                  <span>Total Expenses</span>
+                  <span>{formatCurrency(expenses.reduce((s, e) => s + e.amount, 0))}</span>
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-gray-400">No expenses recorded for this job</p>
+            )}
+          </div>
+
           {/* Notes */}
           <JobNotes
             jobId={id}
             jobType="survey"
             initialNotes={notes ?? []}
             currentUserId={user?.id ?? ''}
+            currentUserName={profile?.full_name ?? ''}
             currentUserRole={profile?.role ?? ''}
           />
         </div>
@@ -250,14 +315,51 @@ export default async function SurveyJobDetailPage({ params }: { params: Promise<
             )}
           </div>
 
+          {/* Profitability */}
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <Receipt className="w-4 h-4 text-gray-400" />Profitability
+            </h2>
+            <dl className="space-y-3">
+              <div className="flex justify-between text-sm">
+                <dt className="text-gray-500">Invoiced</dt>
+                <dd className="font-medium text-gray-900">{formatCurrency(totalInvoiced)}</dd>
+              </div>
+              <div className="flex justify-between text-sm">
+                <dt className="text-gray-500">Expenses</dt>
+                <dd className="font-medium text-gray-900">{formatCurrency(totalExpenses)}</dd>
+              </div>
+              <div className="pt-2 border-t border-gray-100 flex justify-between text-sm font-semibold">
+                <dt className={netMargin >= 0 ? 'text-emerald-700' : 'text-red-600'}>
+                  Net Margin
+                </dt>
+                <dd className={netMargin >= 0 ? 'text-emerald-700' : 'text-red-600'}>
+                  {formatCurrency(netMargin)}
+                  {marginPct !== null && (
+                    <span className="ml-1 text-xs font-normal opacity-75">
+                      ({marginPct.toFixed(1)}%)
+                    </span>
+                  )}
+                </dd>
+              </div>
+            </dl>
+            {invoices?.length === 0 && (
+              <p className="text-xs text-gray-400 mt-3">No invoices raised yet</p>
+            )}
+          </div>
+
           {/* Quick links */}
           <div className="bg-white rounded-xl border border-gray-200 p-5">
             <h2 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
               <Hash className="w-4 h-4 text-gray-400" />Quick Links
             </h2>
             <div className="space-y-2">
+              <Link href={`/finance/quotations?job=${id}&job_type=survey`}
+                className="block text-sm text-blue-600 hover:underline">Quotations</Link>
               <Link href={`/finance/invoices?job=${id}&job_type=survey`}
                 className="block text-sm text-blue-600 hover:underline">Invoices</Link>
+              <Link href="/finance/expenses"
+                className="block text-sm text-blue-600 hover:underline">Expenses</Link>
               <Link href={`/documents?job=${id}&job_type=survey`}
                 className="block text-sm text-blue-600 hover:underline">Documents</Link>
               <Link href={`/timesheets?job=${id}&job_type=survey`}

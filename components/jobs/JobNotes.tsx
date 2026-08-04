@@ -13,10 +13,11 @@ interface Props {
   jobType: 'survey' | 'construction'
   initialNotes: JobNoteWithProfile[]
   currentUserId: string
+  currentUserName: string
   currentUserRole: string
 }
 
-export function JobNotes({ jobId, jobType, initialNotes, currentUserId, currentUserRole }: Props) {
+export function JobNotes({ jobId, jobType, initialNotes, currentUserId, currentUserName, currentUserRole }: Props) {
   const router = useRouter()
   const [notes, setNotes] = useState(initialNotes)
   const [content, setContent] = useState('')
@@ -24,22 +25,39 @@ export function JobNotes({ jobId, jobType, initialNotes, currentUserId, currentU
   const [isPending, startTransition] = useTransition()
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
-  // Sync when server re-renders with new data
+  // Sync when server re-renders with updated data
   useEffect(() => {
     setNotes(initialNotes)
   }, [initialNotes])
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!content.trim() || isPending) return
+    const trimmed = content.trim()
+    if (!trimmed || isPending) return
+
+    // Optimistically add the note immediately so the user sees it right away
+    const optimisticNote: JobNoteWithProfile = {
+      id: `optimistic-${Date.now()}`,
+      job_id: jobId,
+      job_type: jobType,
+      content: trimmed,
+      created_by: currentUserId,
+      created_at: new Date().toISOString(),
+      profiles: { full_name: currentUserName || 'You' },
+    }
+    setNotes((prev) => [optimisticNote, ...prev])
+    setContent('')
+    setError(null)
 
     startTransition(async () => {
-      const result = await addJobNoteAction(jobId, jobType, content)
+      const result = await addJobNoteAction(jobId, jobType, trimmed)
       if (result.error) {
+        // Roll back the optimistic note on error
+        setNotes((prev) => prev.filter((n) => n.id !== optimisticNote.id))
+        setContent(trimmed)
         setError(result.error)
       } else {
-        setContent('')
-        setError(null)
+        // Refresh to get the real note (with correct id) from the server
         router.refresh()
       }
     })

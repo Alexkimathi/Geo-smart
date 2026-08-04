@@ -129,10 +129,36 @@ export interface FinanceDocument {
   due_date: string | null
   paid_date: string | null
   line_items: LineItem[]
-  file_url: string | null
+  converted_to: string | null
+  notes: string | null
   created_by: string | null
   created_at: string
   updated_at: string
+}
+
+export interface Payment {
+  id: string
+  invoice_id: string
+  amount: number
+  method: 'Cash' | 'Bank Transfer' | 'M-Pesa' | 'Cheque' | 'Other'
+  payment_date: string
+  reference: string | null
+  notes: string | null
+  recorded_by: string | null
+  created_at: string
+}
+
+export interface Expense {
+  id: string
+  job_type: 'survey' | 'construction' | null
+  job_id: string | null
+  category: 'Labour' | 'Materials' | 'Transport' | 'Fuel' | 'Equipment' | 'Other'
+  description: string
+  amount: number
+  expense_date: string
+  receipt_url: string | null
+  recorded_by: string | null
+  created_at: string
 }
 
 export interface LineItem {
@@ -179,3 +205,49 @@ export interface JobNote {
 export type SurveyJobWithClient = SurveyJob & { clients: Pick<Client, 'id' | 'name' | 'company' | 'phone' | 'email'> | null }
 export type ConstructionJobWithClient = ConstructionJob & { clients: Pick<Client, 'id' | 'name' | 'company' | 'phone' | 'email'> | null }
 export type JobNoteWithProfile = JobNote & { profiles: Pick<Profile, 'full_name'> | null }
+export type FinanceDocumentWithClient = FinanceDocument & { clients: Pick<Client, 'id' | 'name' | 'company' | 'phone' | 'email'> | null }
+export type PaymentWithInvoice = Payment & { finance_documents: Pick<FinanceDocument, 'id' | 'doc_no' | 'client_id'> & { clients: Pick<Client, 'id' | 'name'> | null } | null }
+
+export interface BoqItem {
+  id: string
+  job_id: string
+  job_type: 'survey' | 'construction'
+  description: string
+  unit: string
+  quantity: number
+  unit_rate: number
+  amount: number
+  sort_order: number
+  created_at: string
+}
+
+export interface Lpo {
+  id: string
+  lpo_no: string
+  supplier_name: string
+  job_type: 'survey' | 'construction' | null
+  job_id: string | null
+  items: LpoLineItem[]
+  subtotal: number
+  tax: number
+  total: number
+  status: 'Draft' | 'Sent' | 'Received' | 'Cancelled'
+  issued_date: string | null
+  notes: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface LpoLineItem {
+  description: string
+  quantity: number
+  unit: string
+  unit_price: number
+  amount: number
+}
+
+export type LpoWithJob = Lpo & {
+  survey_jobs?: Pick<SurveyJob, 'job_no' | 'site_name'> | null
+  construction_jobs?: Pick<ConstructionJob, 'job_no' | 'project_name'> | null
+}

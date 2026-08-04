@@ -63,8 +63,10 @@ const NAV: NavItem[] = [
     children: [
       { label: 'Quotations', href: '/finance/quotations' },
       { label: 'Invoices', href: '/finance/invoices' },
+      { label: 'LPOs', href: '/finance/lpos' },
       { label: 'Expenses', href: '/finance/expenses' },
       { label: 'Payments', href: '/finance/payments' },
+      { label: 'Reports', href: '/finance/reports' },
     ],
   },
   { label: 'Documents', href: '/documents', icon: FolderOpen },
