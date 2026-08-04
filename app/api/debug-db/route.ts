@@ -13,8 +13,8 @@ export async function GET() {
   return NextResponse.json({
     url_set: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
     service_key_set: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-    clients: { count: clients.count, error: clients.error?.message ?? null },
-    survey_jobs: { count: survey.count, error: survey.error?.message ?? null },
-    construction_jobs: { count: construction.count, error: construction.error?.message ?? null },
+    clients: { count: clients.count, error: clients.error ?? null },
+    survey_jobs: { count: survey.count, error: survey.error ?? null },
+    construction_jobs: { count: construction.count, error: construction.error ?? null },
   })
 }
