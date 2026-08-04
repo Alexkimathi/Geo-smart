@@ -1,113 +1,57 @@
 import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 import { redirect } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import {
-  Briefcase,
-  Users,
-  ReceiptText,
-  AlertTriangle,
-  TrendingUp,
-  CheckCircle2,
-} from 'lucide-react'
-
-async function getDashboardStats() {
-  const supabase = await createClient()
-
-  const [
-    { count: activeJobsCount },
-    { count: totalClientsCount },
-    { data: overdueInvoices },
-    { data: recentJobs },
-    { data: invoiceSummary },
-  ] = await Promise.all([
-    supabase.from('jobs').select('*', { count: 'exact', head: true }),
-    supabase.from('clients').select('*', { count: 'exact', head: true }),
-    supabase
-      .from('invoices')
-      .select('id, invoice_number, total, amount_paid, due_date, clients(name)')
-      .eq('status', 'overdue')
-      .order('due_date', { ascending: true })
-      .limit(5),
-    supabase
-      .from('jobs')
-      .select('id, job_number, type, start_date, clients(name), survey_jobs(status), construction_jobs(status)')
-      .order('created_at', { ascending: false })
-      .limit(5),
-    supabase
-      .from('invoices')
-      .select('total, amount_paid, status') as unknown as Promise<{ data: { total: number; amount_paid: number; status: string }[] | null }>,
-  ])
-
-  const totalInvoiced = invoiceSummary?.reduce((s, i) => s + i.total, 0) ?? 0
-  const totalPaid = invoiceSummary?.reduce((s, i) => s + i.amount_paid, 0) ?? 0
-  const totalOutstanding = totalInvoiced - totalPaid
-
-  return {
-    activeJobsCount: activeJobsCount ?? 0,
-    totalClientsCount: totalClientsCount ?? 0,
-    overdueInvoices: overdueInvoices ?? [],
-    recentJobs: recentJobs ?? [],
-    totalInvoiced,
-    totalPaid,
-    totalOutstanding,
-  }
-}
+import { Briefcase, Users, ReceiptText, AlertTriangle, TrendingUp, CheckCircle2 } from 'lucide-react'
+import Link from 'next/link'
+import type { SurveyJob, ConstructionJob, Client } from '@/types/database'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('full_name, role')
-    .eq('id', user.id)
-    .single() as unknown as { data: { full_name: string; role: string } | null }
+  const db = createServiceClient()
 
-  const stats = await getDashboardStats()
+  const [
+    { data: profile },
+    { count: surveyCount },
+    { count: constructionCount },
+    { count: clientCount },
+    { data: recentSurvey },
+    { data: recentConstruction },
+    { data: financeData },
+  ] = await Promise.all([
+    db.from('profiles').select('full_name, role').eq('id', user.id).single() as unknown as Promise<{ data: { full_name: string; role: string } | null }>,
+    db.from('survey_jobs').select('*', { count: 'exact', head: true }),
+    db.from('construction_jobs').select('*', { count: 'exact', head: true }),
+    db.from('clients').select('*', { count: 'exact', head: true }),
+    db.from('survey_jobs').select('id, job_no, status, site_name, clients(name)').order('created_at', { ascending: false }).limit(4) as unknown as Promise<{ data: (Pick<SurveyJob, 'id' | 'job_no' | 'status' | 'site_name'> & { clients: Pick<Client, 'name'> | null })[] | null }>,
+    db.from('construction_jobs').select('id, job_no, status, project_name, progress_pct, clients(name)').order('created_at', { ascending: false }).limit(4) as unknown as Promise<{ data: (Pick<ConstructionJob, 'id' | 'job_no' | 'status' | 'project_name' | 'progress_pct'> & { clients: Pick<Client, 'name'> | null })[] | null }>,
+    db.from('finance_documents').select('type, amount, total, status') as unknown as Promise<{ data: { type: string; amount: number; total: number; status: string }[] | null }>,
+  ])
+
+  const totalJobs = (surveyCount ?? 0) + (constructionCount ?? 0)
+  const totalInvoiced = financeData?.filter(f => f.type === 'Invoice').reduce((s, f) => s + f.total, 0) ?? 0
+  const totalPaid = financeData?.filter(f => f.type === 'Invoice' && f.status === 'Paid').reduce((s, f) => s + f.total, 0) ?? 0
+  const overdueCount = financeData?.filter(f => f.type === 'Invoice' && f.status === 'Overdue').length ?? 0
 
   const statCards = [
-    {
-      label: 'Active Jobs',
-      value: stats.activeJobsCount,
-      icon: Briefcase,
-      color: 'text-blue-600',
-      bg: 'bg-blue-50',
-    },
-    {
-      label: 'Total Clients',
-      value: stats.totalClientsCount,
-      icon: Users,
-      color: 'text-emerald-600',
-      bg: 'bg-emerald-50',
-    },
-    {
-      label: 'Total Invoiced',
-      value: formatCurrency(stats.totalInvoiced),
-      icon: ReceiptText,
-      color: 'text-violet-600',
-      bg: 'bg-violet-50',
-    },
-    {
-      label: 'Outstanding',
-      value: formatCurrency(stats.totalOutstanding),
-      icon: TrendingUp,
-      color: 'text-orange-600',
-      bg: 'bg-orange-50',
-    },
+    { label: 'Total Jobs', value: totalJobs, icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-50' },
+    { label: 'Total Clients', value: clientCount ?? 0, icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+    { label: 'Total Invoiced', value: formatCurrency(totalInvoiced), icon: ReceiptText, color: 'text-violet-600', bg: 'bg-violet-50' },
+    { label: 'Total Collected', value: formatCurrency(totalPaid), icon: TrendingUp, color: 'text-orange-600', bg: 'bg-orange-50' },
   ]
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900">
           Good morning, {profile?.full_name?.split(' ')[0] ?? 'there'}
         </h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Here's what's happening at Geo-smart today.
-        </p>
+        <p className="text-sm text-gray-500 mt-1">Here's what's happening at Geo-smart today.</p>
       </div>
 
       {/* Stat cards */}
@@ -133,72 +77,58 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Jobs */}
+        {/* Recent Survey Jobs */}
         <Card>
-          <CardHeader>
-            <CardTitle>Recent Jobs</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Recent Survey Jobs</CardTitle>
+            <Link href="/jobs/survey" className="text-xs text-blue-600 hover:underline">View all</Link>
           </CardHeader>
           <CardContent>
-            {stats.recentJobs.length === 0 ? (
-              <p className="text-sm text-gray-400">No jobs yet.</p>
+            {!recentSurvey || recentSurvey.length === 0 ? (
+              <p className="text-sm text-gray-400">No survey jobs yet.</p>
             ) : (
               <ul className="divide-y divide-gray-100">
-                {stats.recentJobs.map((job: any) => {
-                  const status = job.survey_jobs?.[0]?.status ?? job.construction_jobs?.[0]?.status
-                  return (
-                    <li key={job.id} className="py-3 flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">{job.job_number}</p>
-                        <p className="text-xs text-gray-500">{job.clients?.name ?? 'No client'}</p>
-                      </div>
-                      <div className="text-right">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize
-                          ${job.type === 'survey' ? 'bg-blue-50 text-blue-700' : 'bg-amber-50 text-amber-700'}`}>
-                          {job.type}
-                        </span>
-                        {status && (
-                          <p className="text-xs text-gray-400 mt-0.5 capitalize">{status.replace('_', ' ')}</p>
-                        )}
-                      </div>
-                    </li>
-                  )
-                })}
+                {recentSurvey.map((job) => (
+                  <li key={job.id} className="py-3 flex items-center justify-between">
+                    <div>
+                      <Link href={`/jobs/survey/${job.id}`} className="text-sm font-mono font-medium text-blue-600 hover:underline">{job.job_no}</Link>
+                      <p className="text-xs text-gray-500">{job.clients?.name ?? 'No client'} — {job.site_name}</p>
+                    </div>
+                    <Badge variant="gray" className="text-xs">{job.status}</Badge>
+                  </li>
+                ))}
               </ul>
             )}
           </CardContent>
         </Card>
 
-        {/* Overdue Invoices */}
+        {/* Recent Construction Jobs */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Overdue Invoices</CardTitle>
-            {stats.overdueInvoices.length > 0 && (
+            <CardTitle>Recent Construction Jobs</CardTitle>
+            {overdueCount > 0 && (
               <div className="flex items-center gap-1 text-xs text-red-600 font-medium">
-                <AlertTriangle className="w-3.5 h-3.5" />
-                {stats.overdueInvoices.length} overdue
+                <AlertTriangle className="w-3.5 h-3.5" />{overdueCount} overdue invoice{overdueCount > 1 ? 's' : ''}
               </div>
             )}
+            {overdueCount === 0 && <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
+            <Link href="/jobs/construction" className="text-xs text-blue-600 hover:underline">View all</Link>
           </CardHeader>
           <CardContent>
-            {stats.overdueInvoices.length === 0 ? (
-              <div className="flex items-center gap-2 text-sm text-emerald-600">
-                <CheckCircle2 className="w-4 h-4" />
-                No overdue invoices
-              </div>
+            {!recentConstruction || recentConstruction.length === 0 ? (
+              <p className="text-sm text-gray-400">No construction jobs yet.</p>
             ) : (
               <ul className="divide-y divide-gray-100">
-                {stats.overdueInvoices.map((inv: any) => (
-                  <li key={inv.id} className="py-3 flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{inv.invoice_number}</p>
-                      <p className="text-xs text-gray-500">{inv.clients?.name ?? '—'}</p>
+                {recentConstruction.map((job) => (
+                  <li key={job.id} className="py-3 flex items-center justify-between">
+                    <div className="flex-1 min-w-0 mr-3">
+                      <Link href={`/jobs/construction/${job.id}`} className="text-sm font-mono font-medium text-blue-600 hover:underline">{job.job_no}</Link>
+                      <p className="text-xs text-gray-500 truncate">{job.clients?.name ?? 'No client'} — {job.project_name}</p>
+                      <div className="mt-1 h-1 bg-gray-100 rounded-full w-24">
+                        <div className="h-full bg-blue-500 rounded-full" style={{ width: `${job.progress_pct}%` }} />
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm font-semibold text-red-600">
-                        {formatCurrency(inv.total - inv.amount_paid)}
-                      </p>
-                      <p className="text-xs text-gray-400">Due {formatDate(inv.due_date)}</p>
-                    </div>
+                    <Badge variant="blue" className="capitalize text-xs shrink-0">{job.status}</Badge>
                   </li>
                 ))}
               </ul>
