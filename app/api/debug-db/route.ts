@@ -14,6 +14,7 @@ export async function GET() {
     url_set: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
     url_value: process.env.NEXT_PUBLIC_SUPABASE_URL,
     service_key_prefix: process.env.SUPABASE_SERVICE_ROLE_KEY?.slice(0, 20),
+    service_key_length: process.env.SUPABASE_SERVICE_ROLE_KEY?.length,
     clients: { count: clients.count, status: clients.status, statusText: clients.statusText, error: clients.error },
     survey_jobs: { count: survey.count, status: survey.status, statusText: survey.statusText, error: survey.error },
     construction_jobs: { count: construction.count, status: construction.status, statusText: construction.statusText, error: construction.error },
