@@ -6,11 +6,12 @@ import { Plus, Calendar, TrendingUp } from 'lucide-react'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import type { ConstructionJob, Client } from '@/types/database'
 
-const STATUS_COLORS: Record<string, 'blue' | 'green' | 'purple' | 'yellow'> = {
+const STATUS_COLORS: Record<string, 'blue' | 'green' | 'purple' | 'yellow' | 'gray'> = {
   Ongoing: 'blue',
   Completed: 'green',
   Handover: 'purple',
   Tender: 'yellow',
+  'On Hold': 'gray',
 }
 
 export default async function ConstructionJobsPage({
@@ -24,13 +25,16 @@ export default async function ConstructionJobsPage({
   let query = supabase
     .from('construction_jobs')
     .select('*, clients(id, name, company)')
+    .eq('is_archived', false)
     .order('created_at', { ascending: false })
 
   if (status) query = query.eq('status', status)
 
-  const { data: jobs } = await query as unknown as {
+  const { data: jobs, error: jobsError } = await query as unknown as {
     data: (ConstructionJob & { clients: Pick<Client, 'id' | 'name' | 'company'> | null })[] | null
+    error: { message: string } | null
   }
+  if (jobsError) console.error('[construction jobs]', jobsError.message)
 
   const filtered = q
     ? jobs?.filter((j) =>

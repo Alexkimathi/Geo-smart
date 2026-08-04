@@ -25,14 +25,19 @@ export async function updateSession(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  const isAuthRoute = request.nextUrl.pathname.startsWith('/login')
-  const isDashboardRoute = request.nextUrl.pathname.startsWith('/dashboard') ||
-    request.nextUrl.pathname.startsWith('/clients') ||
-    request.nextUrl.pathname.startsWith('/jobs') ||
-    request.nextUrl.pathname.startsWith('/equipment') ||
-    request.nextUrl.pathname.startsWith('/timesheets') ||
-    request.nextUrl.pathname.startsWith('/finance') ||
-    request.nextUrl.pathname.startsWith('/documents')
+  const { pathname } = request.nextUrl
+  const isAuthRoute = pathname.startsWith('/login') ||
+    pathname.startsWith('/forgot-password') ||
+    pathname.startsWith('/reset-password')
+  const isDashboardRoute =
+    pathname.startsWith('/dashboard') ||
+    pathname.startsWith('/clients') ||
+    pathname.startsWith('/jobs') ||
+    pathname.startsWith('/equipment') ||
+    pathname.startsWith('/timesheets') ||
+    pathname.startsWith('/finance') ||
+    pathname.startsWith('/documents') ||
+    pathname.startsWith('/settings')
 
   if (!user && isDashboardRoute) {
     const url = request.nextUrl.clone()

@@ -12,6 +12,7 @@ const STATUS_COLORS: Record<string, 'gray' | 'blue' | 'yellow' | 'purple' | 'gre
   QA: 'yellow',
   Delivered: 'purple',
   Paid: 'green',
+  'On Hold': 'gray',
 }
 
 const SURVEY_TYPE_LABELS: Record<string, string> = {
@@ -32,13 +33,16 @@ export default async function SurveyJobsPage({
   let query = supabase
     .from('survey_jobs')
     .select('*, clients(id, name, company)')
+    .eq('is_archived', false)
     .order('created_at', { ascending: false })
 
   if (status) query = query.eq('status', status)
 
-  const { data: jobs } = await query as unknown as {
+  const { data: jobs, error: jobsError } = await query as unknown as {
     data: (SurveyJob & { clients: Pick<Client, 'id' | 'name' | 'company'> | null })[] | null
+    error: { message: string } | null
   }
+  if (jobsError) console.error('[survey jobs]', jobsError.message)
 
   const filtered = q
     ? jobs?.filter((j) =>

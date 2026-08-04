@@ -15,6 +15,7 @@ import {
   ChevronDown,
   Building2,
   X,
+  Settings,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
@@ -67,6 +68,15 @@ const NAV: NavItem[] = [
     ],
   },
   { label: 'Documents', href: '/documents', icon: FolderOpen },
+  {
+    label: 'Settings',
+    href: '/settings',
+    icon: Settings,
+    children: [
+      { label: 'My Account', href: '/settings/account' },
+      { label: 'Users', href: '/settings/users', roles: ['admin'] as UserRole[] },
+    ],
+  },
 ]
 
 function canSee(

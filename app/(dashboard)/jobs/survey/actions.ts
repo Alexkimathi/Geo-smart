@@ -84,6 +84,35 @@ export async function updateSurveyJobAction(
 
   revalidatePath('/jobs/survey')
   revalidatePath(`/jobs/survey/${jobId}`)
+  return { success: true, jobId }
+}
+
+export async function deleteSurveyJobAction(jobId: string): Promise<JobFormState> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not authenticated' }
+
+  const db = createServiceClient()
+  const { data: profile } = await db.from('profiles').select('role').eq('id', user.id).single()
+  if (profile?.role !== 'admin') return { error: 'Only admins can delete jobs' }
+
+  const { error } = await db.from('survey_jobs').delete().eq('id', jobId)
+  if (error) return { error: error.message }
+
+  revalidatePath('/jobs/survey')
+  return { success: true }
+}
+
+export async function archiveSurveyJobAction(jobId: string): Promise<JobFormState> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not authenticated' }
+
+  const db = createServiceClient()
+  const { error } = await db.from('survey_jobs').update({ is_archived: true }).eq('id', jobId)
+  if (error) return { error: error.message }
+
+  revalidatePath('/jobs/survey')
   return { success: true }
 }
 

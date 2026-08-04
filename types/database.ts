@@ -6,8 +6,8 @@
 export type UserRole = 'admin' | 'manager' | 'surveyor' | 'site_engineer' | 'accountant'
 export type SurveyType = 'Topo' | 'Cadastral' | 'Control' | 'Setting Out'
 export type ConstructionType = 'House' | 'Commercial' | 'Road' | 'Tender'
-export type JobStatusSurvey = 'New' | 'In Progress' | 'QA' | 'Delivered' | 'Paid'
-export type JobStatusConstruction = 'Ongoing' | 'Completed' | 'Handover' | 'Tender'
+export type JobStatusSurvey = 'New' | 'In Progress' | 'QA' | 'Delivered' | 'Paid' | 'On Hold'
+export type JobStatusConstruction = 'Ongoing' | 'Completed' | 'Handover' | 'Tender' | 'On Hold'
 export type EquipmentType = 'total_station' | 'gps' | 'level' | 'drone' | 'vehicle' | 'material' | 'tool' | 'other'
 export type EquipmentCondition = 'good' | 'fair' | 'poor' | 'under_maintenance' | 'retired'
 export type FinanceDocType = 'Invoice' | 'Quotation'
@@ -166,6 +166,16 @@ export interface ServiceRate {
   created_at: string
 }
 
+export interface JobNote {
+  id: string
+  job_id: string
+  job_type: 'survey' | 'construction'
+  content: string
+  created_by: string | null
+  created_at: string
+}
+
 // With client join
 export type SurveyJobWithClient = SurveyJob & { clients: Pick<Client, 'id' | 'name' | 'company' | 'phone' | 'email'> | null }
 export type ConstructionJobWithClient = ConstructionJob & { clients: Pick<Client, 'id' | 'name' | 'company' | 'phone' | 'email'> | null }
+export type JobNoteWithProfile = JobNote & { profiles: Pick<Profile, 'full_name'> | null }
