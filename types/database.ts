@@ -89,8 +89,13 @@ export interface Equipment {
   last_calibration_date: string | null
   stock_qty: number
   min_stock_qty: number
+  notes: string | null
   created_at: string
   updated_at: string
+}
+
+export type EquipmentWithUser = Equipment & {
+  profiles: Pick<Profile, 'full_name'> | null
 }
 
 export interface MaintenanceLog {
@@ -106,13 +111,23 @@ export interface MaintenanceLog {
 export interface Timesheet {
   id: string
   user_id: string
-  job_type: 'survey' | 'construction'
+  job_type: 'survey' | 'construction' | null
   job_id: string | null
   date: string
+  clock_in_time: string | null
+  clock_in_lat: number | null
+  clock_in_lng: number | null
+  clock_out_time: string | null
+  clock_out_lat: number | null
+  clock_out_lng: number | null
   hours: number | null
   notes: string | null
   site_photo_url: string | null
   created_at: string
+}
+
+export type TimesheetWithProfile = Timesheet & {
+  profiles: Pick<Profile, 'full_name' | 'role'> | null
 }
 
 export interface FinanceDocument {
@@ -175,11 +190,17 @@ export interface Document {
   job_id: string | null
   client_id: string | null
   name: string
-  category: string | null
+  category: string
   file_url: string
+  file_size: number | null
+  mime_type: string | null
   version: number
   uploaded_by: string | null
   created_at: string
+}
+
+export type DocumentWithUploader = Document & {
+  profiles: Pick<Profile, 'full_name'> | null
 }
 
 export interface ServiceRate {
