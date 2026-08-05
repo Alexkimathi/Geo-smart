@@ -61,14 +61,14 @@ export default async function QuotationsPage({
   const jobParams = job ? `&job=${job}&job_type=${job_type}` : ''
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div>
+    <div className="p-4 md:p-6 max-w-7xl mx-auto">
+      <div className="flex items-center justify-between gap-3 mb-6">
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold text-gray-900">Quotations</h1>
           <p className="text-sm text-gray-500 mt-0.5">{filtered?.length ?? 0} quotations</p>
         </div>
-        <Link href="/finance/quotations/new">
-          <Button><Plus className="w-4 h-4" />New Quotation</Button>
+        <Link href="/finance/quotations/new" className="shrink-0">
+          <Button><Plus className="w-4 h-4" /><span className="hidden sm:inline">New Quotation</span></Button>
         </Link>
       </div>
 
@@ -86,14 +86,14 @@ export default async function QuotationsPage({
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3 mb-6">
-        <form method="GET">
+        <form method="GET" className="w-full sm:w-auto">
           {job && <input type="hidden" name="job" value={job} />}
           {job_type && <input type="hidden" name="job_type" value={job_type} />}
           <input
             name="q"
             defaultValue={q}
             placeholder="Search quotations..."
-            className="pl-3 pr-4 h-9 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-52"
+            className="pl-3 pr-4 h-9 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-52"
           />
         </form>
         <div className="flex gap-2 flex-wrap">
@@ -120,8 +120,8 @@ export default async function QuotationsPage({
           </p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
+          <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50">
                 <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Doc No.</th>

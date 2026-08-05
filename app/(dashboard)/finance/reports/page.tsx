@@ -165,8 +165,8 @@ export default async function ReportsPage() {
             <p className="text-sm text-emerald-600 mt-0.5">All invoices are fully settled</p>
           </div>
         ) : (
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <table className="w-full text-sm">
+          <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
+            <table className="w-full min-w-[720px] text-sm">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-100">
                   <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Client</th>
@@ -227,7 +227,7 @@ export default async function ReportsPage() {
             <h2 className="text-lg font-semibold text-gray-900">P&L per Job</h2>
             <p className="text-sm text-gray-500 mt-0.5">Revenue vs costs across all active jobs</p>
           </div>
-          <div className="flex gap-6 text-right">
+          <div className="flex flex-wrap gap-4 text-right">
             <div>
               <p className="text-xs text-gray-400 uppercase tracking-wide">Total Invoiced</p>
               <p className="text-lg font-bold text-gray-900">{formatCurrency(totalInvoiced)}</p>
@@ -245,8 +245,8 @@ export default async function ReportsPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
+          <table className="w-full min-w-[720px] text-sm">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
                 <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Job</th>

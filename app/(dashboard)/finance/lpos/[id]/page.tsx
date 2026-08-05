@@ -2,7 +2,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, Pencil, Printer } from 'lucide-react'
+import { ChevronLeft, Pencil } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { formatDate, formatCurrency } from '@/lib/utils'
@@ -90,7 +90,8 @@ export default async function LpoDetailPage({ params }: { params: Promise<{ id: 
           {/* Line Items */}
           <div className="bg-white rounded-xl border border-gray-200 p-5">
             <h2 className="font-semibold text-gray-900 mb-4">Items Ordered</h2>
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[400px] text-sm">
               <thead>
                 <tr className="border-b border-gray-100">
                   <th className="text-left pb-2 text-xs font-medium text-gray-400 uppercase tracking-wide">Description</th>
@@ -112,6 +113,7 @@ export default async function LpoDetailPage({ params }: { params: Promise<{ id: 
                 ))}
               </tbody>
             </table>
+            </div>
             <div className="mt-4 pt-4 border-t border-gray-100 space-y-1.5 max-w-xs ml-auto">
               <div className="flex justify-between text-sm text-gray-600">
                 <span>Subtotal</span><span>{formatCurrency(lpo.subtotal)}</span>

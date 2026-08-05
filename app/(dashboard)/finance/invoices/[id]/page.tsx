@@ -101,7 +101,8 @@ export default async function InvoiceDetailPage({
           {/* Line Items */}
           <div className="bg-white rounded-xl border border-gray-200 p-5">
             <h2 className="font-semibold text-gray-900 mb-4">Line Items</h2>
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[420px] text-sm">
               <thead>
                 <tr className="border-b border-gray-100">
                   <th className="text-left pb-2 text-xs font-medium text-gray-400 uppercase tracking-wide">Description</th>
@@ -123,6 +124,7 @@ export default async function InvoiceDetailPage({
                 ))}
               </tbody>
             </table>
+            </div>
 
             {/* Totals */}
             <div className="mt-4 pt-4 border-t border-gray-100 space-y-1.5 max-w-xs ml-auto">
@@ -148,7 +150,8 @@ export default async function InvoiceDetailPage({
             </div>
 
             {payments && payments.length > 0 ? (
-              <table className="w-full text-sm mb-4">
+              <div className="overflow-x-auto mb-4">
+              <table className="w-full min-w-[400px] text-sm">
                 <thead>
                   <tr className="border-b border-gray-100">
                     <th className="text-left pb-2 text-xs font-medium text-gray-400 uppercase tracking-wide">Date</th>
@@ -164,13 +167,14 @@ export default async function InvoiceDetailPage({
                   ))}
                 </tbody>
               </table>
+              </div>
             ) : (
               <p className="text-sm text-gray-400 mb-4">No payments recorded yet</p>
             )}
 
             {/* Balance */}
-            <div className={`rounded-lg p-3 flex items-center justify-between text-sm ${balanceDue < 0 ? 'bg-blue-50 border border-blue-100' : 'bg-gray-50'}`}>
-              <div className="flex gap-6">
+            <div className={`rounded-lg p-3 text-sm ${balanceDue < 0 ? 'bg-blue-50 border border-blue-100' : 'bg-gray-50'}`}>
+              <div className="flex flex-wrap gap-4">
                 <div>
                   <p className="text-xs text-gray-400">Invoice Total</p>
                   <p className="font-semibold text-gray-900">{formatCurrency(doc.total)}</p>

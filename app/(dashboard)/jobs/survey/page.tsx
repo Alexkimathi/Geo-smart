@@ -55,25 +55,25 @@ export default async function SurveyJobsPage({
   const statuses = ['New', 'In Progress', 'QA', 'Delivered', 'Paid']
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div>
+    <div className="p-4 md:p-6 max-w-7xl mx-auto">
+      <div className="flex items-center justify-between gap-3 mb-6">
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold text-gray-900">Survey Jobs</h1>
           <p className="text-sm text-gray-500 mt-0.5">{filtered?.length ?? 0} jobs</p>
         </div>
-        <Link href="/jobs/survey/new">
-          <Button><Plus className="w-4 h-4" />New Survey Job</Button>
+        <Link href="/jobs/survey/new" className="shrink-0">
+          <Button><Plus className="w-4 h-4" /><span className="hidden sm:inline">New Survey Job</span></Button>
         </Link>
       </div>
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3 mb-6">
-        <form method="GET">
+        <form method="GET" className="w-full sm:w-auto">
           <input
             name="q"
             defaultValue={q}
             placeholder="Search jobs..."
-            className="pl-3 pr-4 h-9 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-52"
+            className="pl-3 pr-4 h-9 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-52"
           />
         </form>
         <div className="flex gap-2 flex-wrap">
@@ -96,8 +96,8 @@ export default async function SurveyJobsPage({
           <p className="text-sm mt-1">Create your first survey job to get started</p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
+          <table className="w-full min-w-[580px] text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50">
                 <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Job No.</th>

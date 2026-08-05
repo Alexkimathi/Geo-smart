@@ -37,8 +37,8 @@ export default async function LposPage() {
             {lpos?.length ?? 0} LPOs · Total: {formatCurrency(total)}
           </p>
         </div>
-        <Link href="/finance/lpos/new">
-          <Button size="sm"><Plus className="w-4 h-4" />New LPO</Button>
+        <Link href="/finance/lpos/new" className="shrink-0">
+          <Button size="sm"><Plus className="w-4 h-4" /><span className="hidden sm:inline">New LPO</span></Button>
         </Link>
       </div>
 
@@ -48,8 +48,8 @@ export default async function LposPage() {
           <p className="text-sm mt-1">Create your first Local Purchase Order</p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
+          <table className="w-full min-w-[580px] text-sm">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
                 <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">LPO No.</th>

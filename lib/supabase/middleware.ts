@@ -27,8 +27,9 @@ export async function updateSession(request: NextRequest) {
 
   const { pathname } = request.nextUrl
   const isAuthRoute = pathname.startsWith('/login') ||
-    pathname.startsWith('/forgot-password') ||
-    pathname.startsWith('/reset-password')
+    pathname.startsWith('/forgot-password')
+  // /reset-password is intentionally excluded — it must remain accessible to
+  // authenticated users who have just arrived via a password-reset email link.
   const isDashboardRoute =
     pathname.startsWith('/dashboard') ||
     pathname.startsWith('/clients') ||
