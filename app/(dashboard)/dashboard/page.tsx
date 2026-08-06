@@ -20,7 +20,7 @@ export default async function DashboardPage() {
   const firstName = profile?.full_name?.split(' ')[0] ?? 'there'
   const role = profile?.role ?? 'manager'
 
-  if (role === 'surveyor') return <SurveyDashboard name={firstName} />
-  if (role === 'site_engineer') return <ConstructionDashboard name={firstName} />
+  if (role === 'surveyor') return <SurveyDashboard name={firstName} userId={user.id} />
+  if (role === 'site_engineer') return <ConstructionDashboard name={firstName} userId={user.id} />
   return <ManagerDashboard name={firstName} />
 }

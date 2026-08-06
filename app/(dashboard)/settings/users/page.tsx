@@ -2,7 +2,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Plus, UserCog } from 'lucide-react'
+import { Plus, UserCog, Package } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { formatDate } from '@/lib/utils'
 import { DeleteUserButton } from './DeleteUserButton'
@@ -33,10 +33,15 @@ export default async function UsersPage() {
   const { data: myProfile } = await db.from('profiles').select('role').eq('id', user.id).single()
   if (myProfile?.role !== 'admin') redirect('/dashboard')
 
-  const { data: users } = await db
-    .from('profiles')
-    .select('*')
-    .order('full_name') as unknown as { data: Profile[] | null }
+  const [{ data: users }, { data: equipment }] = await Promise.all([
+    db.from('profiles').select('*').order('full_name') as unknown as Promise<{ data: Profile[] | null }>,
+    db.from('equipment').select('id, assigned_to_user_id').not('assigned_to_user_id', 'is', null) as unknown as Promise<{ data: { id: string; assigned_to_user_id: string }[] | null }>,
+  ])
+
+  const equipmentByUser = new Map<string, number>()
+  for (const e of equipment ?? []) {
+    equipmentByUser.set(e.assigned_to_user_id, (equipmentByUser.get(e.assigned_to_user_id) ?? 0) + 1)
+  }
 
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto">
@@ -62,6 +67,7 @@ export default async function UsersPage() {
               <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Role</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Phone</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Joined</th>
+              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Equipment</th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
@@ -87,6 +93,19 @@ export default async function UsersPage() {
                 </td>
                 <td className="px-4 py-3 text-gray-500">{u.phone ?? '—'}</td>
                 <td className="px-4 py-3 text-gray-400 text-xs">{formatDate(u.created_at)}</td>
+                <td className="px-4 py-3">
+                  {equipmentByUser.get(u.id) ? (
+                    <Link
+                      href={`/equipment?assigned=${u.id}`}
+                      className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline"
+                    >
+                      <Package className="w-3.5 h-3.5" />
+                      {equipmentByUser.get(u.id)} item{equipmentByUser.get(u.id) !== 1 ? 's' : ''}
+                    </Link>
+                  ) : (
+                    <span className="text-xs text-gray-400">None</span>
+                  )}
+                </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center justify-end gap-2">
                     <Link

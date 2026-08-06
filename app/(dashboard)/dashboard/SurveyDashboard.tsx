@@ -2,9 +2,17 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { formatDate } from '@/lib/utils'
-import { ClipboardList, Clock, Search, CheckCircle2, MapPin, Calendar } from 'lucide-react'
+import { ClipboardList, Clock, Search, CheckCircle2, MapPin, Calendar, Package } from 'lucide-react'
 import Link from 'next/link'
-import type { SurveyJob, Client } from '@/types/database'
+import type { SurveyJob, Client, Equipment } from '@/types/database'
+
+const CONDITION_COLORS: Record<string, 'green' | 'yellow' | 'red' | 'orange' | 'gray'> = {
+  good: 'green', fair: 'yellow', poor: 'red', under_maintenance: 'orange', retired: 'gray',
+}
+const TYPE_LABELS: Record<string, string> = {
+  total_station: 'Total Station', gps: 'GPS Receiver', level: 'Level', drone: 'Drone',
+  vehicle: 'Vehicle', material: 'Material', tool: 'Tool', other: 'Other',
+}
 
 type SurveyRow = Pick<SurveyJob, 'id' | 'job_no' | 'site_name' | 'survey_type' | 'status' | 'start_date' | 'county'> & {
   clients: Pick<Client, 'name'> | null
@@ -35,16 +43,22 @@ function greeting() {
   return h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening'
 }
 
-export async function SurveyDashboard({ name }: { name: string }) {
+export async function SurveyDashboard({ name, userId }: { name: string; userId: string }) {
   const db = createServiceClient()
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
     .toISOString().split('T')[0]
 
-  const { data: jobs } = await db
-    .from('survey_jobs')
-    .select('id, job_no, site_name, survey_type, status, start_date, county, clients(name)')
-    .eq('is_archived', false)
-    .order('created_at', { ascending: false }) as unknown as { data: SurveyRow[] | null }
+  const [{ data: jobs }, { data: myEquipment }] = await Promise.all([
+    db
+      .from('survey_jobs')
+      .select('id, job_no, site_name, survey_type, status, start_date, county, clients(name)')
+      .eq('is_archived', false)
+      .order('created_at', { ascending: false }) as unknown as Promise<{ data: SurveyRow[] | null }>,
+    db
+      .from('equipment')
+      .select('id, name, type, condition, serial_no')
+      .eq('assigned_to_user_id', userId) as unknown as Promise<{ data: Pick<Equipment, 'id' | 'name' | 'type' | 'condition' | 'serial_no'>[] | null }>,
+  ])
 
   const all = jobs ?? []
   const total = all.length
@@ -234,6 +248,37 @@ export async function SurveyDashboard({ name }: { name: string }) {
                     <p className="text-xs text-gray-500 truncate">{job.clients.name}</p>
                   )}
                 </Link>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* My Equipment */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Package className="w-4 h-4 text-gray-400" />My Equipment
+          </CardTitle>
+          <Link href="/equipment" className="text-xs text-blue-600 hover:underline shrink-0">View all</Link>
+        </CardHeader>
+        <CardContent>
+          {!myEquipment?.length ? (
+            <p className="text-sm text-gray-400">No equipment assigned to you yet.</p>
+          ) : (
+            <div className="divide-y divide-gray-100">
+              {myEquipment.map((e) => (
+                <div key={e.id} className="py-2.5 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <Link href={`/equipment/${e.id}`} className="text-sm font-medium text-gray-900 hover:text-blue-600 truncate block">
+                      {e.name}
+                    </Link>
+                    <p className="text-xs text-gray-400">{TYPE_LABELS[e.type] ?? e.type}{e.serial_no ? ` · ${e.serial_no}` : ''}</p>
+                  </div>
+                  <Badge variant={CONDITION_COLORS[e.condition] ?? 'gray'} className="text-xs shrink-0 capitalize">
+                    {e.condition.replace('_', ' ')}
+                  </Badge>
+                </div>
               ))}
             </div>
           )}
