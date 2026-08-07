@@ -5,6 +5,9 @@ import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { z } from 'zod'
 import type { FinanceDocType, FinanceDocStatus } from '@/types/database'
+import { sendEmail } from '@/lib/email'
+import { invoiceSentEmailTemplate } from '@/lib/email-templates'
+import { getInvoiceNotificationRecipients } from '@/lib/get-notification-recipients'
 
 // ─── Shared Types ────────────────────────────────────────────
 export type FinanceFormState = { error?: string; success?: boolean; docId?: string }
@@ -162,6 +165,41 @@ export async function updateDocumentStatusAction(
   revalidatePath('/finance/quotations')
   revalidatePath(`/finance/invoices/${id}`)
   revalidatePath(`/finance/quotations/${id}`)
+
+  if (status === 'Sent') {
+    void (async () => {
+      try {
+        const db = createServiceClient()
+        const { data: doc } = await db
+          .from('finance_documents')
+          .select('type, doc_no, total, due_date, job_id, job_type')
+          .eq('id', id)
+          .single()
+        if (doc?.type !== 'Invoice') return
+        const { emails, clientName } = await getInvoiceNotificationRecipients(id)
+        if (emails.length === 0) return
+        let jobRef: string | null = null
+        if (doc.job_id && doc.job_type === 'survey') {
+          const { data: j } = await db.from('survey_jobs').select('job_no').eq('id', doc.job_id).single()
+          jobRef = j?.job_no ?? null
+        } else if (doc.job_id && doc.job_type === 'construction') {
+          const { data: j } = await db.from('construction_jobs').select('job_no').eq('id', doc.job_id).single()
+          jobRef = j?.job_no ?? null
+        }
+        const { subject, html } = invoiceSentEmailTemplate({
+          docNo: doc.doc_no,
+          clientName,
+          total: doc.total,
+          dueDate: doc.due_date,
+          jobRef,
+        })
+        await sendEmail({ to: emails, subject, html })
+      } catch (err) {
+        console.error('[notifications] Invoice Sent email failed:', err)
+      }
+    })()
+  }
+
   return { success: true }
 }
 

@@ -4,6 +4,9 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { z } from 'zod'
+import { sendEmail } from '@/lib/email'
+import { jobDeliveredEmailTemplate } from '@/lib/email-templates'
+import { getSurveyJobNotificationRecipients } from '@/lib/get-notification-recipients'
 
 const surveyJobSchema = z.object({
   client_id: z.string().min(1, 'Client is required'),
@@ -125,5 +128,24 @@ export async function updateSurveyStatusAction(jobId: string, status: string): P
   if (error) return { error: error.message }
   revalidatePath(`/jobs/survey/${jobId}`)
   revalidatePath('/jobs/survey')
+
+  if (status === 'Delivered') {
+    void (async () => {
+      try {
+        const { data: jobData } = await db
+          .from('survey_jobs')
+          .select('job_no, site_name, survey_type, county, start_date, end_date')
+          .eq('id', jobId)
+          .single()
+        const { emails, clientName } = await getSurveyJobNotificationRecipients(jobId)
+        if (emails.length === 0 || !jobData) return
+        const { subject, html } = jobDeliveredEmailTemplate({ ...jobData, clientName })
+        await sendEmail({ to: emails, subject, html })
+      } catch (err) {
+        console.error('[notifications] Job Delivered email failed:', err)
+      }
+    })()
+  }
+
   return { success: true }
 }
