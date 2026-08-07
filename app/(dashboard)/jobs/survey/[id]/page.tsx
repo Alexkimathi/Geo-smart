@@ -12,7 +12,8 @@ import { SurveyStatusStepper } from './SurveyStatusStepper'
 import { JobActions } from '@/components/jobs/JobActions'
 import { JobNotes } from '@/components/jobs/JobNotes'
 import { deleteSurveyJobAction, archiveSurveyJobAction } from '@/app/(dashboard)/jobs/survey/actions'
-import type { SurveyJob, Client, JobNoteWithProfile, Expense } from '@/types/database'
+import type { SurveyJob, Client, JobNoteWithProfile, Expense, Timesheet } from '@/types/database'
+import { JobClockInOut } from '@/components/timesheets/JobClockInOut'
 
 const SURVEY_TYPE_LABELS: Record<string, string> = {
   Topo: 'Topographic Survey',
@@ -38,7 +39,7 @@ export default async function SurveyJobDetailPage({ params }: { params: Promise<
   const auth = await createClient()
   const { data: { user } } = await auth.auth.getUser()
 
-  const [{ data: job }, { data: profile }, { data: notes }, { data: expenses }, { data: invoices }] = await Promise.all([
+  const [{ data: job }, { data: profile }, { data: notes }, { data: expenses }, { data: invoices }, { data: openTimesheet }] = await Promise.all([
     db
       .from('survey_jobs')
       .select('*, clients(id, name, company, phone, email, site_location, pin, contact_person)')
@@ -69,9 +70,30 @@ export default async function SurveyJobDetailPage({ params }: { params: Promise<
       .eq('job_id', id)
       .eq('job_type', 'survey')
       .eq('type', 'Invoice') as unknown as Promise<{ data: { total: number; status: string }[] | null }>,
+    user
+      ? db
+          .from('timesheets')
+          .select('*')
+          .eq('user_id', user.id)
+          .is('clock_out_time', null)
+          .order('clock_in_time', { ascending: false })
+          .limit(1)
+          .maybeSingle() as unknown as Promise<{ data: Timesheet | null }>
+      : Promise.resolve({ data: null }),
   ])
 
   if (!job) notFound()
+
+  let activeJobLabel: string | null = null
+  if (openTimesheet && openTimesheet.job_id !== id) {
+    if (openTimesheet.job_type === 'survey') {
+      const { data: aj } = await db.from('survey_jobs').select('job_no, site_name').eq('id', openTimesheet.job_id!).single()
+      if (aj) activeJobLabel = `${aj.job_no} — ${aj.site_name}`
+    } else if (openTimesheet.job_type === 'construction') {
+      const { data: aj } = await db.from('construction_jobs').select('job_no, project_name').eq('id', openTimesheet.job_id!).single()
+      if (aj) activeJobLabel = `${aj.job_no} — ${aj.project_name}`
+    }
+  }
 
   const totalInvoiced = (invoices ?? []).reduce((s, inv) => s + inv.total, 0)
   const totalCollected = 0 // payments not fetched here; shown on invoice detail
@@ -273,6 +295,17 @@ export default async function SurveyJobDetailPage({ params }: { params: Promise<
 
         {/* Sidebar */}
         <div className="space-y-4">
+          {/* Clock In/Out — field staff only */}
+          {user && ['surveyor', 'site_engineer'].includes(profile?.role ?? '') && (
+            <JobClockInOut
+              jobId={id}
+              jobType="survey"
+              userId={user.id}
+              openTimesheet={openTimesheet}
+              activeJobLabel={activeJobLabel}
+            />
+          )}
+
           {/* Client */}
           <div className="bg-white rounded-xl border border-gray-200 p-5">
             <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">

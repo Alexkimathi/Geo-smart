@@ -59,7 +59,12 @@ export async function createUserAction(
     phone: parsed.data.phone || null,
   })
 
-  if (profileError) return { error: profileError.message }
+  if (profileError) {
+    if (profileError.message.includes('role_check') || profileError.message.includes('check constraint')) {
+      return { error: 'Please select a valid role.' }
+    }
+    return { error: 'User account was created but profile setup failed. Please contact support.' }
+  }
 
   revalidatePath('/settings/users')
   return { success: true }
@@ -90,19 +95,30 @@ export async function updateUserAction(
   if (!admin) return { error: 'Only admins can edit users' }
 
   const full_name = formData.get('full_name') as string
-  const role = formData.get('role') as UserRole
+  const role = formData.get('role') as UserRole | null
   const phone = formData.get('phone') as string
 
   if (!full_name?.trim()) return { error: 'Full name is required' }
-  if (!VALID_ROLES.includes(role)) return { error: 'Invalid role' }
+  if (role !== null && !VALID_ROLES.includes(role)) return { error: 'Please select a valid role.' }
+
+  const updateData: Record<string, unknown> = {
+    full_name: full_name.trim(),
+    phone: phone || null,
+  }
+  if (role !== null) updateData.role = role
 
   const db = createServiceClient()
   const { error } = await db
     .from('profiles')
-    .update({ full_name: full_name.trim(), role, phone: phone || null })
+    .update(updateData)
     .eq('id', userId)
 
-  if (error) return { error: error.message }
+  if (error) {
+    if (error.message.includes('role_check') || error.message.includes('check constraint')) {
+      return { error: 'Please select a valid role.' }
+    }
+    return { error: 'Failed to save changes. Please try again.' }
+  }
 
   revalidatePath('/settings/users')
   return { success: true }
