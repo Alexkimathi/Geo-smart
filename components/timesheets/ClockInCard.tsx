@@ -20,13 +20,13 @@ function formatDuration(ms: number): string {
   return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
 }
 
-async function getGPS(): Promise<GeolocationCoordinates | null> {
+async function getGPS(): Promise<{ coords: GeolocationCoordinates | null; denied?: boolean }> {
   return new Promise((resolve) => {
-    if (!navigator.geolocation) { resolve(null); return }
+    if (!navigator.geolocation) { resolve({ coords: null }); return }
     navigator.geolocation.getCurrentPosition(
-      (pos) => resolve(pos.coords),
-      () => resolve(null),
-      { timeout: 8000, enableHighAccuracy: true }
+      (pos) => resolve({ coords: pos.coords }),
+      (err) => resolve({ coords: null, denied: err.code === 1 }),
+      { timeout: 12000, enableHighAccuracy: false, maximumAge: 60000 }
     )
   })
 }
@@ -35,6 +35,7 @@ export function ClockInCard({ openTimesheet, jobs, userId }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  const [gpsStatus, setGpsStatus] = useState<'idle' | 'fetching' | 'ok' | 'unavailable'>('idle')
 
   // Clock-in form state
   const [jobType, setJobType] = useState<'survey' | 'construction' | ''>('')
@@ -64,7 +65,14 @@ export function ClockInCard({ openTimesheet, jobs, userId }: Props) {
   async function handleClockIn() {
     if (!jobType || !jobId) { setError('Please select a job'); return }
     setError(null)
-    const coords = await getGPS()
+    setGpsStatus('fetching')
+    const { coords, denied } = await getGPS()
+    if (denied) {
+      setGpsStatus('idle')
+      setError('Location access is blocked. Please allow location in your browser settings and try again.')
+      return
+    }
+    setGpsStatus(coords ? 'ok' : 'unavailable')
     startTransition(async () => {
       const result = await clockInAction(
         jobType as 'survey' | 'construction',
@@ -81,7 +89,6 @@ export function ClockInCard({ openTimesheet, jobs, userId }: Props) {
   async function handleClockOut() {
     if (!openTimesheet) return
     setError(null)
-
     let photoUrl: string | null = null
 
     if (photoFile) {
@@ -101,7 +108,14 @@ export function ClockInCard({ openTimesheet, jobs, userId }: Props) {
       photoUrl = publicUrl
     }
 
-    const coords = await getGPS()
+    setGpsStatus('fetching')
+    const { coords, denied } = await getGPS()
+    if (denied) {
+      setGpsStatus('idle')
+      setError('Location access is blocked. Please allow location in your browser settings and try again.')
+      return
+    }
+    setGpsStatus(coords ? 'ok' : 'unavailable')
 
     startTransition(async () => {
       const result = await clockOutAction(
@@ -142,15 +156,12 @@ export function ClockInCard({ openTimesheet, jobs, userId }: Props) {
                 hour: '2-digit',
                 minute: '2-digit',
               })}
-              {openTimesheet.clock_in_lat != null && (
-                <span
-                  className="ml-2 text-xs text-emerald-600"
-                  title={`${openTimesheet.clock_in_lat.toFixed(5)}, ${openTimesheet.clock_in_lng?.toFixed(5)}`}
-                >
-                  GPS captured
-                </span>
-              )}
             </p>
+            {openTimesheet.clock_in_lat != null && (
+              <p className="text-xs text-emerald-600 font-mono mt-0.5">
+                📍 {openTimesheet.clock_in_lat.toFixed(5)}, {openTimesheet.clock_in_lng?.toFixed(5)}
+              </p>
+            )}
           </div>
           <div className="text-right shrink-0">
             <p className="text-3xl font-mono font-bold text-emerald-700 tabular-nums">
@@ -200,15 +211,22 @@ export function ClockInCard({ openTimesheet, jobs, userId }: Props) {
 
           <button
             onClick={handleClockOut}
-            disabled={isPending || uploading}
+            disabled={isPending || uploading || gpsStatus === 'fetching'}
             className="w-full py-2.5 bg-emerald-600 text-white font-medium rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {uploading
               ? 'Uploading photo...'
+              : gpsStatus === 'fetching'
+              ? 'Getting location...'
               : isPending
               ? 'Clocking out...'
               : 'Clock Out'}
           </button>
+          {gpsStatus === 'unavailable' && (
+            <p className="text-xs text-amber-500 text-center mt-1">
+              Location unavailable — entry will be saved without coordinates
+            </p>
+          )}
         </div>
       </div>
     )
@@ -280,13 +298,16 @@ export function ClockInCard({ openTimesheet, jobs, userId }: Props) {
       <div className="mt-4">
         <button
           onClick={handleClockIn}
-          disabled={isPending || !jobId}
+          disabled={isPending || gpsStatus === 'fetching' || !jobId}
           className="w-full py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
-          {isPending ? 'Getting location & clocking in...' : 'Clock In'}
+          {gpsStatus === 'fetching' ? 'Getting location...' : isPending ? 'Clocking in...' : 'Clock In'}
         </button>
-        <p className="text-xs text-gray-400 text-center mt-2">
-          GPS location will be captured automatically
+        <p className="text-xs text-center mt-2">
+          {gpsStatus === 'idle' && <span className="text-gray-400">GPS location will be captured automatically</span>}
+          {gpsStatus === 'fetching' && <span className="text-blue-500">Acquiring GPS coordinates...</span>}
+          {gpsStatus === 'ok' && <span className="text-emerald-600">Location captured</span>}
+          {gpsStatus === 'unavailable' && <span className="text-amber-500">Location unavailable — entry will be saved without coordinates</span>}
         </p>
       </div>
     </div>

@@ -83,32 +83,30 @@ export function TimesheetTable({ timesheets, jobOptions, showStaffColumn, canDel
                   <span className="text-xs text-gray-400 uppercase">{ts.job_type}</span>
                 </td>
 
-                <td className="px-4 py-3 text-gray-700 whitespace-nowrap">
-                  {formatTime(ts.clock_in_time)}
-                  {ts.clock_in_lat != null && (
-                    <span
-                      className="ml-1 text-xs text-gray-400"
-                      title={`${ts.clock_in_lat.toFixed(5)}, ${ts.clock_in_lng?.toFixed(5)}`}
-                    >
-                      📍
-                    </span>
-                  )}
+                <td className="px-4 py-3 text-gray-700">
+                  <div>{formatTime(ts.clock_in_time)}</div>
+                  {ts.clock_in_lat != null ? (
+                    <div className="text-xs text-gray-400 font-mono mt-0.5">
+                      📍 {ts.clock_in_lat.toFixed(5)}, {ts.clock_in_lng?.toFixed(5)}
+                    </div>
+                  ) : ts.clock_in_time ? (
+                    <div className="text-xs text-gray-300 mt-0.5">No location</div>
+                  ) : null}
                 </td>
 
-                <td className="px-4 py-3 whitespace-nowrap">
+                <td className="px-4 py-3">
                   {isActive ? (
                     <Badge variant="yellow">Active</Badge>
                   ) : (
                     <>
-                      {formatTime(ts.clock_out_time)}
-                      {ts.clock_out_lat != null && (
-                        <span
-                          className="ml-1 text-xs text-gray-400"
-                          title={`${ts.clock_out_lat.toFixed(5)}, ${ts.clock_out_lng?.toFixed(5)}`}
-                        >
-                          📍
-                        </span>
-                      )}
+                      <div className="text-gray-700">{formatTime(ts.clock_out_time)}</div>
+                      {ts.clock_out_lat != null ? (
+                        <div className="text-xs text-gray-400 font-mono mt-0.5">
+                          📍 {ts.clock_out_lat.toFixed(5)}, {ts.clock_out_lng?.toFixed(5)}
+                        </div>
+                      ) : ts.clock_out_time ? (
+                        <div className="text-xs text-gray-300 mt-0.5">No location</div>
+                      ) : null}
                     </>
                   )}
                 </td>

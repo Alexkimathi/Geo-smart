@@ -23,21 +23,101 @@ function formatDuration(ms: number): string {
   return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
 }
 
-async function getGPS(): Promise<GeolocationCoordinates | null> {
+async function getGPS(): Promise<{ coords: GeolocationCoordinates | null; denied?: boolean }> {
   return new Promise((resolve) => {
-    if (!navigator.geolocation) { resolve(null); return }
+    if (!navigator.geolocation) { resolve({ coords: null }); return }
     navigator.geolocation.getCurrentPosition(
-      (pos) => resolve(pos.coords),
-      () => resolve(null),
-      { timeout: 8000, enableHighAccuracy: true }
+      (pos) => resolve({ coords: pos.coords }),
+      (err) => resolve({ coords: null, denied: err.code === 1 }),
+      { timeout: 12000, enableHighAccuracy: false, maximumAge: 60000 }
     )
   })
+}
+
+function detectPlatform(): 'ios' | 'android' | 'mac' | 'windows' | 'other' {
+  if (typeof navigator === 'undefined') return 'other'
+  const ua = navigator.userAgent
+  if (/iPhone|iPad|iPod/.test(ua)) return 'ios'
+  if (/Android/.test(ua)) return 'android'
+  if (/Mac/.test(ua)) return 'mac'
+  if (/Windows/.test(ua)) return 'windows'
+  return 'other'
+}
+
+function LocationDeniedHelp() {
+  const platform = detectPlatform()
+
+  const steps: Record<string, { title: string; steps: string[] }> = {
+    ios: {
+      title: 'Allow location on iPhone / iPad',
+      steps: [
+        'Open the Settings app',
+        'Tap Privacy & Security → Location Services',
+        'Find Safari (or Chrome) and tap it',
+        'Select While Using the App',
+        'Come back here and try again',
+      ],
+    },
+    android: {
+      title: 'Allow location on Android',
+      steps: [
+        'Open Settings on your phone',
+        'Tap Apps → find your browser (Chrome / Samsung Internet)',
+        'Tap Permissions → Location',
+        'Select Allow only while using the app',
+        'Come back here and try again',
+      ],
+    },
+    mac: {
+      title: 'Allow location on Mac',
+      steps: [
+        'Open System Settings',
+        'Go to Privacy & Security → Location Services',
+        'Make sure Location Services is ON',
+        'Find your browser in the list and enable it',
+        'Reload this page and try again',
+      ],
+    },
+    windows: {
+      title: 'Allow location on Windows',
+      steps: [
+        'Open Settings → Privacy & Security → Location',
+        'Make sure Location access is On',
+        'In your browser, click the lock icon in the address bar',
+        'Set Location to Allow',
+        'Reload this page and try again',
+      ],
+    },
+    other: {
+      title: 'Allow location access',
+      steps: [
+        'Click the lock or info icon in your browser address bar',
+        'Find Location and set it to Allow',
+        'If blocked at system level, check your device Privacy / Location settings',
+        'Reload this page and try again',
+      ],
+    },
+  }
+
+  const { title, steps: items } = steps[platform]
+
+  return (
+    <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+      <p className="font-semibold mb-1.5">{title}:</p>
+      <ol className="space-y-1 list-decimal list-inside">
+        {items.map((step, i) => (
+          <li key={i}>{step}</li>
+        ))}
+      </ol>
+    </div>
+  )
 }
 
 export function JobClockInOut({ jobId, jobType, userId, openTimesheet, activeJobLabel }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  const [locationDenied, setLocationDenied] = useState(false)
   const [notes, setNotes] = useState('')
   const [photoFile, setPhotoFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
@@ -56,7 +136,12 @@ export function JobClockInOut({ jobId, jobType, userId, openTimesheet, activeJob
 
   async function handleClockIn() {
     setError(null)
-    const coords = await getGPS()
+    setLocationDenied(false)
+    const { coords, denied } = await getGPS()
+    if (denied) {
+      setLocationDenied(true)
+      return
+    }
     startTransition(async () => {
       const result = await clockInAction(
         jobType,
@@ -90,7 +175,11 @@ export function JobClockInOut({ jobId, jobType, userId, openTimesheet, activeJob
       photoUrl = publicUrl
     }
 
-    const coords = await getGPS()
+    const { coords, denied } = await getGPS()
+    if (denied) {
+      setLocationDenied(true)
+      return
+    }
     startTransition(async () => {
       const result = await clockOutAction(
         openTimesheet.id,
@@ -158,6 +247,7 @@ export function JobClockInOut({ jobId, jobType, userId, openTimesheet, activeJob
             {error && (
               <p className="text-xs text-red-600 bg-red-50 rounded px-2 py-1">{error}</p>
             )}
+            {locationDenied && <LocationDeniedHelp />}
             <div className="flex gap-2">
               <button
                 onClick={() => { setShowClockOutForm(false); setError(null) }}
@@ -252,16 +342,29 @@ export function JobClockInOut({ jobId, jobType, userId, openTimesheet, activeJob
       {error && (
         <p className="text-xs text-red-600 bg-red-50 rounded px-2 py-1 mb-2">{error}</p>
       )}
-      <button
-        onClick={handleClockIn}
-        disabled={isPending}
-        className="w-full py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
-      >
-        {isPending ? 'Getting location...' : 'Clock In'}
-      </button>
-      <p className="text-xs text-gray-400 text-center mt-1.5">
-        GPS location captured automatically
-      </p>
+      {locationDenied && <LocationDeniedHelp />}
+      {!locationDenied && (
+        <>
+          <button
+            onClick={handleClockIn}
+            disabled={isPending}
+            className="w-full py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+          >
+            {isPending ? 'Getting location...' : 'Clock In'}
+          </button>
+          <p className="text-xs text-gray-400 text-center mt-1.5">
+            GPS location captured automatically
+          </p>
+        </>
+      )}
+      {locationDenied && (
+        <button
+          onClick={() => { setLocationDenied(false); setError(null) }}
+          className="mt-3 w-full py-2 border border-gray-200 text-gray-600 text-sm rounded-lg hover:bg-gray-50 transition-colors"
+        >
+          Try again
+        </button>
+      )}
     </div>
   )
 }
