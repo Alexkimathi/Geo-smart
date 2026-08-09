@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import {
   ChevronLeft, Calendar, User, FileText,
-  Hash, ClipboardList, TrendingUp, Pencil, Receipt,
+  Hash, ClipboardList, TrendingUp, Pencil, Receipt, AlertTriangle,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { formatDate, formatCurrency } from '@/lib/utils'
@@ -14,7 +14,7 @@ import { JobActions } from '@/components/jobs/JobActions'
 import { JobNotes } from '@/components/jobs/JobNotes'
 import { BoqEditor } from '@/components/finance/BoqEditor'
 import { deleteConstructionJobAction, archiveConstructionJobAction } from '@/app/(dashboard)/jobs/construction/actions'
-import type { ConstructionJob, Client, JobNoteWithProfile, Expense, BoqItem, Timesheet } from '@/types/database'
+import type { ConstructionJob, Client, JobNoteWithProfile, Expense, BoqItem, Lpo, Timesheet } from '@/types/database'
 import { JobClockInOut } from '@/components/timesheets/JobClockInOut'
 
 const STATUS_COLORS: Record<string, 'blue' | 'green' | 'purple' | 'yellow' | 'gray'> = {
@@ -40,7 +40,7 @@ export default async function ConstructionJobDetailPage({ params }: { params: Pr
   const auth = await createClient()
   const { data: { user } } = await auth.auth.getUser()
 
-  const [{ data: job }, { data: profile }, { data: notes }, { data: expenses }, { data: invoices }, { data: boqItems }, { data: openTimesheet }] = await Promise.all([
+  const [{ data: job }, { data: profile }, { data: notes }, { data: expenses }, { data: invoices }, { data: lpos }, { data: boqItems }, { data: openTimesheet }] = await Promise.all([
     db
       .from('construction_jobs')
       .select('*, clients(id, name, company, phone, email, site_location, pin, contact_person)')
@@ -71,6 +71,12 @@ export default async function ConstructionJobDetailPage({ params }: { params: Pr
       .eq('job_id', id)
       .eq('job_type', 'construction')
       .eq('type', 'Invoice') as unknown as Promise<{ data: { total: number; status: string }[] | null }>,
+    db
+      .from('lpos')
+      .select('total, status')
+      .eq('job_id', id)
+      .eq('job_type', 'construction')
+      .neq('status', 'Cancelled') as unknown as Promise<{ data: Pick<Lpo, 'total' | 'status'>[] | null }>,
     db
       .from('boq_items')
       .select('*')
@@ -104,7 +110,9 @@ export default async function ConstructionJobDetailPage({ params }: { params: Pr
 
   const totalInvoiced = (invoices ?? []).reduce((s, inv) => s + inv.total, 0)
   const totalExpenses = (expenses ?? []).reduce((s, e) => s + e.amount, 0)
-  const netMargin = totalInvoiced - totalExpenses
+  const totalLpos = (lpos ?? []).reduce((s, l) => s + l.total, 0)
+  const totalCosts = totalExpenses + totalLpos
+  const netMargin = totalInvoiced - totalCosts
   const marginPct = totalInvoiced > 0 ? (netMargin / totalInvoiced) * 100 : null
 
   return (
@@ -159,6 +167,97 @@ export default async function ConstructionJobDetailPage({ params }: { params: Pr
           </div>
         </div>
       </div>
+
+      {/* ── Budget vs Actual ────────────────────────────────────── */}
+      {(job.contract_value > 0 || job.boq_total > 0) && (() => {
+        const invoicedPct = job.contract_value > 0 ? Math.min((totalInvoiced / job.contract_value) * 100, 100) : 0
+        const spentPct = job.boq_total > 0 ? (totalCosts / job.boq_total) * 100 : 0
+        const isOverBudget = job.boq_total > 0 && totalCosts > job.boq_total
+        const budgetRemaining = job.boq_total - totalCosts
+        const revenueRemaining = job.contract_value - totalInvoiced
+        return (
+          <div className="mb-6 bg-white rounded-xl border border-gray-200 p-5">
+            <h2 className="font-semibold text-gray-900 text-sm mb-5 flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-gray-400" />Budget vs Actual
+              {isOverBudget && (
+                <span className="inline-flex items-center gap-1 text-xs font-medium text-red-600 bg-red-50 px-2 py-0.5 rounded-full">
+                  <AlertTriangle className="w-3 h-3" />Over Budget
+                </span>
+              )}
+            </h2>
+
+            {/* 4 metric cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+              <div className="rounded-lg bg-gray-50 border border-gray-100 p-3">
+                <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Contract Value</p>
+                <p className="text-base font-bold text-gray-900">{formatCurrency(job.contract_value)}</p>
+                <p className="text-xs text-gray-400 mt-0.5">Revenue budget</p>
+              </div>
+              <div className="rounded-lg bg-gray-50 border border-gray-100 p-3">
+                <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Invoiced</p>
+                <p className="text-base font-bold text-gray-900">{formatCurrency(totalInvoiced)}</p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {job.contract_value > 0
+                    ? <>{revenueRemaining >= 0 ? formatCurrency(revenueRemaining) + ' remaining' : formatCurrency(Math.abs(revenueRemaining)) + ' over'}</>
+                    : 'Billed to client'}
+                </p>
+              </div>
+              <div className="rounded-lg bg-gray-50 border border-gray-100 p-3">
+                <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">BOQ Budget</p>
+                <p className="text-base font-bold text-gray-900">{formatCurrency(job.boq_total)}</p>
+                <p className="text-xs text-gray-400 mt-0.5">Planned cost</p>
+              </div>
+              <div className={`rounded-lg border p-3 ${isOverBudget ? 'bg-red-50 border-red-100' : 'bg-gray-50 border-gray-100'}`}>
+                <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Actual Costs</p>
+                <p className={`text-base font-bold ${isOverBudget ? 'text-red-600' : 'text-gray-900'}`}>{formatCurrency(totalCosts)}</p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {job.boq_total > 0
+                    ? <>{budgetRemaining >= 0 ? formatCurrency(budgetRemaining) + ' remaining' : formatCurrency(Math.abs(budgetRemaining)) + ' over budget'}</>
+                    : 'Expenses + LPOs'}
+                </p>
+              </div>
+            </div>
+
+            {/* Progress bars */}
+            <div className="space-y-4">
+              {job.contract_value > 0 && (
+                <div>
+                  <div className="flex justify-between text-xs text-gray-500 mb-1.5">
+                    <span>Revenue collected <span className="font-medium text-gray-700">{invoicedPct.toFixed(1)}%</span> of contract</span>
+                    <span className="text-gray-400">{formatCurrency(totalInvoiced)} / {formatCurrency(job.contract_value)}</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-blue-500 transition-all"
+                      style={{ width: `${invoicedPct}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+              {job.boq_total > 0 && (
+                <div>
+                  <div className="flex justify-between text-xs text-gray-500 mb-1.5">
+                    <span>
+                      Cost budget used{' '}
+                      <span className={`font-medium ${isOverBudget ? 'text-red-600' : 'text-gray-700'}`}>
+                        {spentPct.toFixed(1)}%
+                      </span>
+                      {isOverBudget && ' — over budget'}
+                    </span>
+                    <span className="text-gray-400">{formatCurrency(totalCosts)} / {formatCurrency(job.boq_total)}</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all ${isOverBudget ? 'bg-red-500' : spentPct > 80 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                      style={{ width: `${Math.min(spentPct, 100)}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      })()}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main content */}
@@ -369,6 +468,12 @@ export default async function ConstructionJobDetailPage({ params }: { params: Pr
                 <dt className="text-gray-500">Expenses</dt>
                 <dd className="font-medium text-gray-900">{formatCurrency(totalExpenses)}</dd>
               </div>
+              {totalLpos > 0 && (
+                <div className="flex justify-between text-sm">
+                  <dt className="text-gray-500">LPOs</dt>
+                  <dd className="font-medium text-gray-900">{formatCurrency(totalLpos)}</dd>
+                </div>
+              )}
               <div className="pt-2 border-t border-gray-100 flex justify-between text-sm font-semibold">
                 <dt className={netMargin >= 0 ? 'text-emerald-700' : 'text-red-600'}>
                   Net Margin
