@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useTransition, useRef } from 'react'
+import { useState, useEffect, useTransition, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -120,10 +120,18 @@ export function JobClockInOut({ jobId, jobType, userId, openTimesheet, activeJob
   const [locationDenied, setLocationDenied] = useState(false)
   const [notes, setNotes] = useState('')
   const [photoFile, setPhotoFile] = useState<File | null>(null)
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
   const [showClockOutForm, setShowClockOutForm] = useState(false)
   const [elapsed, setElapsed] = useState(0)
   const photoRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (!photoFile) { setPhotoPreview(null); return }
+    const url = URL.createObjectURL(photoFile)
+    setPhotoPreview(url)
+    return () => URL.revokeObjectURL(url)
+  }, [photoFile])
 
   useEffect(() => {
     if (!openTimesheet?.clock_in_time) return
@@ -243,6 +251,23 @@ export function JobClockInOut({ jobId, jobType, userId, openTimesheet, activeJob
                     : 'file:bg-amber-50 file:text-amber-700'
                 }`}
               />
+              {photoPreview && (
+                <div className="mt-1.5 relative inline-block">
+                  <img
+                    src={photoPreview}
+                    alt="Preview"
+                    className="h-20 w-auto rounded-md border border-gray-200 object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => { setPhotoFile(null); if (photoRef.current) photoRef.current.value = '' }}
+                    className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-gray-700 text-white text-xs flex items-center justify-center hover:bg-gray-900"
+                    aria-label="Remove photo"
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
             </div>
             {error && (
               <p className="text-xs text-red-600 bg-red-50 rounded px-2 py-1">{error}</p>

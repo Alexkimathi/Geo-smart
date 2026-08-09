@@ -116,16 +116,21 @@ export function TimesheetTable({ timesheets, jobOptions, showStaffColumn, canDel
                 </td>
 
                 <td className="px-4 py-3 text-gray-500 max-w-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="truncate">{ts.notes ?? '—'}</span>
+                  <div className="flex items-start gap-2">
+                    <span className="truncate text-sm">{ts.notes ?? '—'}</span>
                     {ts.site_photo_url && (
                       <a
                         href={ts.site_photo_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-500 hover:underline text-xs shrink-0"
+                        className="shrink-0 block"
+                        title="View site photo"
                       >
-                        Photo
+                        <img
+                          src={ts.site_photo_url}
+                          alt="Site photo"
+                          className="w-10 h-10 rounded object-cover border border-gray-200 hover:opacity-80 transition-opacity"
+                        />
                       </a>
                     )}
                   </div>

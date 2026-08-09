@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useTransition, useRef } from 'react'
+import { useState, useEffect, useTransition, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { clockInAction, clockOutAction } from '@/app/(dashboard)/timesheets/actions'
@@ -45,8 +45,16 @@ export function ClockInCard({ openTimesheet, jobs, userId }: Props) {
   // Clock-out form state
   const [outNotes, setOutNotes] = useState(openTimesheet?.notes ?? '')
   const [photoFile, setPhotoFile] = useState<File | null>(null)
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
   const photoRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (!photoFile) { setPhotoPreview(null); return }
+    const url = URL.createObjectURL(photoFile)
+    setPhotoPreview(url)
+    return () => URL.revokeObjectURL(url)
+  }, [photoFile])
 
   // Live timer
   const [elapsed, setElapsed] = useState(0)
@@ -94,16 +102,16 @@ export function ClockInCard({ openTimesheet, jobs, userId }: Props) {
     if (photoFile) {
       setUploading(true)
       const supabase = createClient()
-      const path = `timesheets/${userId}/${Date.now()}_${photoFile.name}`
+      const path = `${userId}/${Date.now()}_${photoFile.name}`
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('documents')
+        .from('timesheets')
         .upload(path, photoFile, { upsert: false })
       setUploading(false)
 
       if (uploadError) { setError(uploadError.message); return }
 
       const { data: { publicUrl } } = supabase.storage
-        .from('documents')
+        .from('timesheets')
         .getPublicUrl(uploadData.path)
       photoUrl = publicUrl
     }
@@ -129,6 +137,7 @@ export function ClockInCard({ openTimesheet, jobs, userId }: Props) {
         setError(result.error)
       } else {
         setPhotoFile(null)
+        setOutNotes('')
         if (photoRef.current) photoRef.current.value = ''
         router.refresh()
       }
@@ -196,10 +205,22 @@ export function ClockInCard({ openTimesheet, jobs, userId }: Props) {
               onChange={(e) => setPhotoFile(e.target.files?.[0] ?? null)}
               className="block w-full text-sm text-gray-700 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 border border-gray-200 rounded-lg p-1.5 bg-white"
             />
-            {photoFile && (
-              <p className="text-xs text-gray-500 mt-1">
-                {photoFile.name} — {(photoFile.size / 1024).toFixed(0)} KB
-              </p>
+            {photoPreview && (
+              <div className="mt-2 relative inline-block">
+                <img
+                  src={photoPreview}
+                  alt="Preview"
+                  className="h-24 w-auto rounded-lg border border-gray-200 object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={() => { setPhotoFile(null); if (photoRef.current) photoRef.current.value = '' }}
+                  className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-gray-700 text-white text-xs flex items-center justify-center hover:bg-gray-900"
+                  aria-label="Remove photo"
+                >
+                  ×
+                </button>
+              </div>
             )}
           </div>
 
