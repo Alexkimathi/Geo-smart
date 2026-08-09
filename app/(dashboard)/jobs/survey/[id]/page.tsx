@@ -12,7 +12,7 @@ import { SurveyStatusStepper } from './SurveyStatusStepper'
 import { JobActions } from '@/components/jobs/JobActions'
 import { JobNotes } from '@/components/jobs/JobNotes'
 import { deleteSurveyJobAction, archiveSurveyJobAction } from '@/app/(dashboard)/jobs/survey/actions'
-import type { SurveyJob, Client, JobNoteWithProfile, Expense, Timesheet } from '@/types/database'
+import type { SurveyJob, Client, JobNoteWithProfile, Expense, Lpo, Timesheet } from '@/types/database'
 import { JobClockInOut } from '@/components/timesheets/JobClockInOut'
 
 const SURVEY_TYPE_LABELS: Record<string, string> = {
@@ -39,7 +39,7 @@ export default async function SurveyJobDetailPage({ params }: { params: Promise<
   const auth = await createClient()
   const { data: { user } } = await auth.auth.getUser()
 
-  const [{ data: job }, { data: profile }, { data: notes }, { data: expenses }, { data: invoices }, { data: openTimesheet }] = await Promise.all([
+  const [{ data: job }, { data: profile }, { data: notes }, { data: expenses }, { data: invoices }, { data: lpos }, { data: openTimesheet }] = await Promise.all([
     db
       .from('survey_jobs')
       .select('*, clients(id, name, company, phone, email, site_location, pin, contact_person)')
@@ -70,6 +70,12 @@ export default async function SurveyJobDetailPage({ params }: { params: Promise<
       .eq('job_id', id)
       .eq('job_type', 'survey')
       .eq('type', 'Invoice') as unknown as Promise<{ data: { total: number; status: string }[] | null }>,
+    db
+      .from('lpos')
+      .select('total, status')
+      .eq('job_id', id)
+      .eq('job_type', 'survey')
+      .neq('status', 'Cancelled') as unknown as Promise<{ data: Pick<Lpo, 'total' | 'status'>[] | null }>,
     user
       ? db
           .from('timesheets')
@@ -96,9 +102,10 @@ export default async function SurveyJobDetailPage({ params }: { params: Promise<
   }
 
   const totalInvoiced = (invoices ?? []).reduce((s, inv) => s + inv.total, 0)
-  const totalCollected = 0 // payments not fetched here; shown on invoice detail
   const totalExpenses = (expenses ?? []).reduce((s, e) => s + e.amount, 0)
-  const netMargin = totalInvoiced - totalExpenses
+  const totalLpos = (lpos ?? []).reduce((s, l) => s + l.total, 0)
+  const totalCosts = totalExpenses + totalLpos
+  const netMargin = totalInvoiced - totalCosts
   const marginPct = totalInvoiced > 0 ? (netMargin / totalInvoiced) * 100 : null
 
   return (
@@ -362,6 +369,12 @@ export default async function SurveyJobDetailPage({ params }: { params: Promise<
                 <dt className="text-gray-500">Expenses</dt>
                 <dd className="font-medium text-gray-900">{formatCurrency(totalExpenses)}</dd>
               </div>
+              {totalLpos > 0 && (
+                <div className="flex justify-between text-sm">
+                  <dt className="text-gray-500">LPOs</dt>
+                  <dd className="font-medium text-gray-900">{formatCurrency(totalLpos)}</dd>
+                </div>
+              )}
               <div className="pt-2 border-t border-gray-100 flex justify-between text-sm font-semibold">
                 <dt className={netMargin >= 0 ? 'text-emerald-700' : 'text-red-600'}>
                   Net Margin
