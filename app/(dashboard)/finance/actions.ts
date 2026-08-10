@@ -533,6 +533,76 @@ export async function deleteLpoAction(id: string): Promise<FinanceFormState> {
   return { success: true }
 }
 
+// ─── Generate Document from BOQ ──────────────────────────────
+
+export async function generateDocFromBoqAction(
+  jobId: string,
+  jobType: 'construction',
+  docType: 'Invoice' | 'Quotation'
+): Promise<FinanceFormState> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not authenticated' }
+
+  const db = createServiceClient()
+
+  // Fetch BOQ items
+  const { data: boqItems, error: boqErr } = await db
+    .from('boq_items')
+    .select('description, unit, quantity, unit_rate, amount')
+    .eq('job_id', jobId)
+    .eq('job_type', jobType)
+    .order('sort_order')
+
+  if (boqErr) return { error: boqErr.message }
+  if (!boqItems || boqItems.length === 0) return { error: 'No BOQ items found for this job' }
+
+  // Fetch job details for client_id
+  const { data: job, error: jobErr } = await db
+    .from('construction_jobs')
+    .select('client_id')
+    .eq('id', jobId)
+    .single()
+
+  if (jobErr || !job) return { error: 'Job not found' }
+
+  // Map BOQ items to line items
+  const lineItems = boqItems.map((item) => ({
+    description: item.description,
+    quantity: item.quantity,
+    unit: item.unit,
+    unit_price: item.unit_rate,
+    amount: item.amount,
+  }))
+
+  const subtotal = lineItems.reduce((s, i) => s + i.amount, 0)
+
+  const { data: doc, error: insertErr } = await db
+    .from('finance_documents')
+    .insert({
+      type: docType,
+      doc_no: '',
+      client_id: job.client_id,
+      job_type: jobType,
+      job_id: jobId,
+      tax: 0,
+      amount: subtotal,
+      total: subtotal,
+      line_items: lineItems,
+      status: 'Draft',
+      created_by: user.id,
+    })
+    .select('id')
+    .single()
+
+  if (insertErr) return { error: insertErr.message }
+
+  revalidatePath(`/jobs/construction/${jobId}`)
+  revalidatePath('/finance/invoices')
+  revalidatePath('/finance/quotations')
+  return { success: true, docId: doc.id }
+}
+
 // ─── BOQ Actions ──────────────────────────────────────────────
 
 export async function saveBoqAction(

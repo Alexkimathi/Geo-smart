@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import {
   ChevronLeft, Calendar, User, FileText,
-  Hash, ClipboardList, TrendingUp, Pencil, Receipt, AlertTriangle,
+  Hash, ClipboardList, TrendingUp, Pencil, Receipt, AlertTriangle, Printer,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { formatDate, formatCurrency } from '@/lib/utils'
@@ -16,6 +16,7 @@ import { BoqEditor } from '@/components/finance/BoqEditor'
 import { deleteConstructionJobAction, archiveConstructionJobAction } from '@/app/(dashboard)/jobs/construction/actions'
 import type { ConstructionJob, Client, JobNoteWithProfile, Expense, BoqItem, Lpo, Timesheet } from '@/types/database'
 import { JobClockInOut } from '@/components/timesheets/JobClockInOut'
+import { GenerateDocFromBoqButton } from '@/components/jobs/GenerateDocFromBoqButton'
 
 const STATUS_COLORS: Record<string, 'blue' | 'green' | 'purple' | 'yellow' | 'gray'> = {
   Ongoing: 'blue',
@@ -134,6 +135,13 @@ export default async function ConstructionJobDetailPage({ params }: { params: Pr
           <p className="text-xs text-gray-400 mt-1">Created {formatDate(job.created_at)}</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          <Link
+            href={`/jobs/construction/${id}/print`}
+            target="_blank"
+            className="inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-700 hover:bg-gray-50 px-3 py-1.5 rounded-md border border-gray-200 transition-colors"
+          >
+            <Printer className="w-4 h-4" />Site Report
+          </Link>
           <Link
             href={`/jobs/construction/${id}/edit`}
             className="inline-flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-3 py-1.5 rounded-md border border-blue-200 transition-colors"
@@ -509,6 +517,17 @@ export default async function ConstructionJobDetailPage({ params }: { params: Pr
                 className="block text-sm text-blue-600 hover:underline">Documents</Link>
               <Link href={`/timesheets?job=${id}&job_type=construction`}
                 className="block text-sm text-blue-600 hover:underline">Timesheets</Link>
+              {boqItems && boqItems.length > 0 && (
+                <>
+                  <div className="border-t border-gray-100 pt-2 mt-2">
+                    <p className="text-xs text-gray-400 mb-2 uppercase tracking-wide font-medium">From BOQ</p>
+                    <div className="space-y-2">
+                      <GenerateDocFromBoqButton jobId={id} docType="Quotation" />
+                      <GenerateDocFromBoqButton jobId={id} docType="Invoice" />
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>

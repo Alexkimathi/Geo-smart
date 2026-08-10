@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import {
   ChevronLeft, Calendar, MapPin, User, FileText,
-  Hash, ClipboardList, Pencil, Receipt,
+  Hash, ClipboardList, Pencil, Receipt, Printer,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { formatDate, formatCurrency } from '@/lib/utils'
@@ -132,6 +132,13 @@ export default async function SurveyJobDetailPage({ params }: { params: Promise<
           <p className="text-xs text-gray-400 mt-1">Created {formatDate(job.created_at)}</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          <Link
+            href={`/jobs/survey/${id}/print`}
+            target="_blank"
+            className="inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-700 hover:bg-gray-50 px-3 py-1.5 rounded-md border border-gray-200 transition-colors"
+          >
+            <Printer className="w-4 h-4" />Print Job Card
+          </Link>
           <Link
             href={`/jobs/survey/${id}/edit`}
             className="inline-flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-3 py-1.5 rounded-md border border-blue-200 transition-colors"

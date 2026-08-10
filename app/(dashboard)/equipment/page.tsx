@@ -60,12 +60,20 @@ export default async function EquipmentPage() {
           <h1 className="text-2xl font-bold text-gray-900">Equipment</h1>
           <p className="text-sm text-gray-500 mt-0.5">{totalAssets} assets registered</p>
         </div>
-        <Link
-          href="/equipment/new"
-          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <Plus className="w-4 h-4" />Add Equipment
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/equipment/report"
+            className="inline-flex items-center gap-2 px-4 py-2 border border-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Utilization Report
+          </Link>
+          <Link
+            href="/equipment/new"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Plus className="w-4 h-4" />Add Equipment
+          </Link>
+        </div>
       </div>
 
       {/* KPI Cards */}

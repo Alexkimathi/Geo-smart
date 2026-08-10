@@ -1,7 +1,7 @@
 import { createServiceClient } from '@/lib/supabase/service'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, Phone, Mail, MapPin, User, Building2, Hash, ExternalLink } from 'lucide-react'
+import { ChevronLeft, Phone, Mail, MapPin, User, Building2, Hash, ExternalLink, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { formatDate } from '@/lib/utils'
@@ -47,7 +47,16 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           {client.company && <p className="text-gray-500 mt-0.5">{client.company}</p>}
           <p className="text-xs text-gray-400 mt-1">Added {formatDate(client.created_at)}</p>
         </div>
-        <ClientEditButton client={client} />
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/clients/${id}/statement`}
+            target="_blank"
+            className="inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-700 hover:bg-gray-50 px-3 py-1.5 rounded-md border border-gray-200 transition-colors"
+          >
+            <FileText className="w-4 h-4" />Statement
+          </Link>
+          <ClientEditButton client={client} />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

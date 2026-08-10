@@ -5,6 +5,7 @@ import Link from 'next/link'
 import type { TimesheetWithProfile, Profile } from '@/types/database'
 import { TimesheetTable } from '@/components/timesheets/TimesheetTable'
 import { AddManualTimesheetForm } from '@/components/timesheets/AddManualTimesheetForm'
+import { Paginator } from '@/components/ui/Paginator'
 
 export type JobOption = {
   id: string
@@ -12,10 +13,26 @@ export type JobOption = {
   job_type: 'survey' | 'construction'
 }
 
-export default async function TimesheetsPage() {
+const PAGE_SIZE = 25
+
+function pageHref(p: number) {
+  if (p <= 1) return '/timesheets'
+  return `/timesheets?page=${p}`
+}
+
+export default async function TimesheetsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>
+}) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
+
+  const { page: pageParam } = await searchParams
+  const page = Math.max(1, parseInt(pageParam ?? '1', 10) || 1)
+  const from = (page - 1) * PAGE_SIZE
+  const to = from + PAGE_SIZE - 1
 
   const db = createServiceClient()
 
@@ -43,32 +60,49 @@ export default async function TimesheetsPage() {
   const isAccountant = profile.role === 'accountant'
   const isFieldStaff = !isManager && !isAccountant
 
-  // Fetch timesheets
+  // Fetch paginated timesheets
   let timesheets: TimesheetWithProfile[] = []
+  let totalCount = 0
   if (isManager || isAccountant) {
-    const { data } = await db
+    const { data, count } = await db
       .from('timesheets')
-      .select('*, profiles(full_name, role)')
+      .select('*, profiles(full_name, role)', { count: 'exact' })
       .order('date', { ascending: false })
       .order('clock_in_time', { ascending: false })
-      .limit(200)
-    timesheets = (data as TimesheetWithProfile[]) ?? []
+      .range(from, to) as unknown as { data: TimesheetWithProfile[] | null; count: number | null }
+    timesheets = data ?? []
+    totalCount = count ?? 0
   } else {
-    const { data } = await db
+    const { data, count } = await db
       .from('timesheets')
-      .select('*, profiles(full_name, role)')
+      .select('*, profiles(full_name, role)', { count: 'exact' })
       .eq('user_id', user.id)
       .order('date', { ascending: false })
       .order('clock_in_time', { ascending: false })
-      .limit(100)
-    timesheets = (data as TimesheetWithProfile[]) ?? []
+      .range(from, to) as unknown as { data: TimesheetWithProfile[] | null; count: number | null }
+    timesheets = data ?? []
+    totalCount = count ?? 0
   }
 
-  // Active session for field staff (any open timesheet today)
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE)
+  const currentPage = Math.min(page, totalPages || 1)
+  const prevHref = currentPage > 1 ? pageHref(currentPage - 1) : null
+  const nextHref = currentPage < totalPages ? pageHref(currentPage + 1) : null
+
+  // Active session for field staff — separate targeted query so banner shows on all pages
   const today = new Date().toISOString().split('T')[0]
-  const activeSession = isFieldStaff
-    ? (timesheets.find((t) => t.date === today && !!t.clock_in_time && !t.clock_out_time) ?? null)
-    : null
+  let activeSession: TimesheetWithProfile | null = null
+  if (isFieldStaff) {
+    const { data: openRows } = await db
+      .from('timesheets')
+      .select('*, profiles(full_name, role)')
+      .eq('user_id', user.id)
+      .eq('date', today)
+      .not('clock_in_time', 'is', null)
+      .is('clock_out_time', null)
+      .limit(1) as unknown as { data: TimesheetWithProfile[] | null }
+    activeSession = openRows?.[0] ?? null
+  }
 
   // Job options for lookup + manager manual-entry form
   const jobOptions: JobOption[] = [
@@ -86,7 +120,7 @@ export default async function TimesheetsPage() {
 
   // Job label lookup for active session link
   const activeJobLabel = activeSession?.job_id
-    ? (jobOptions.find((j) => j.id === activeSession.job_id)?.label ?? null)
+    ? (jobOptions.find((j) => j.id === activeSession!.job_id)?.label ?? null)
     : null
 
   // Staff profiles for manager manual-entry form
@@ -96,7 +130,6 @@ export default async function TimesheetsPage() {
     staffProfiles = data ?? []
   }
 
-  const totalHours = timesheets.reduce((sum, t) => sum + (t.hours ?? 0), 0)
   const activeCount = timesheets.filter((t) => !!t.clock_in_time && !t.clock_out_time).length
 
   return (
@@ -106,8 +139,8 @@ export default async function TimesheetsPage() {
           <h1 className="text-2xl font-bold text-gray-900">Timesheets</h1>
           <p className="text-sm text-gray-500 mt-0.5">
             {isManager || isAccountant
-              ? `${timesheets.length} entries · ${totalHours.toFixed(1)} total hours · ${activeCount} active now`
-              : `${timesheets.length} entries · ${totalHours.toFixed(1)} total hours`}
+              ? `${totalCount} entries · ${activeCount} active now`
+              : `${totalCount} entries`}
           </p>
         </div>
       </div>
@@ -159,6 +192,15 @@ export default async function TimesheetsPage() {
         jobOptions={jobOptions}
         showStaffColumn={isManager || isAccountant}
         canDelete={isManager}
+      />
+
+      <Paginator
+        page={currentPage}
+        totalPages={totalPages}
+        totalCount={totalCount}
+        pageSize={PAGE_SIZE}
+        prevHref={prevHref}
+        nextHref={nextHref}
       />
     </div>
   )

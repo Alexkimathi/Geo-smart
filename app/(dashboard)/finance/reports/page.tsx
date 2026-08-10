@@ -1,7 +1,7 @@
 import { createServiceClient } from '@/lib/supabase/service'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
-import { AlertCircle, TrendingUp, Wallet, ShoppingCart, AlertTriangle } from 'lucide-react'
+import { AlertCircle, TrendingUp, Wallet, ShoppingCart, AlertTriangle, DollarSign } from 'lucide-react'
 import { ReportActions } from '@/components/finance/ReportActions'
 import type { FinanceDocumentWithClient, Payment, SurveyJob, ConstructionJob, Expense, Lpo, Client } from '@/types/database'
 
@@ -62,6 +62,7 @@ export default async function ReportsPage({
   const [
     { data: invoices },
     { data: payments },
+    { data: quotations },
     { data: surveyJobs },
     { data: constructionJobs },
     { data: expenses },
@@ -75,6 +76,10 @@ export default async function ReportsPage({
     db
       .from('payments')
       .select('invoice_id, amount, payment_date') as unknown as Promise<{ data: Pick<Payment, 'invoice_id' | 'amount' | 'payment_date'>[] | null }>,
+    db
+      .from('finance_documents')
+      .select('total')
+      .eq('type', 'Quotation') as unknown as Promise<{ data: { total: number }[] | null }>,
     db
       .from('survey_jobs')
       .select('id, job_no, site_name, survey_type, status, client_id, clients(name)')
@@ -107,6 +112,16 @@ export default async function ReportsPage({
   const kpiCosts =
     filteredExpenses.reduce((s, e) => s + e.amount, 0) +
     filteredLpos.reduce((s, l) => s + l.total, 0)
+
+  // ── Revenue Pipeline (all-time) ──────────────────────────────
+  const totalQuoted = (quotations ?? []).reduce((s, q) => s + q.total, 0)
+  const totalInvoicedAll = (invoices ?? []).reduce((s, inv) => s + inv.total, 0)
+  const totalCollectedAll = [...paidByInvoice.values()].reduce((s, v) => s + v, 0)
+  const totalOutstandingAll = (invoices ?? []).reduce((s, inv) => {
+    const bal = inv.total - (paidByInvoice.get(inv.id) ?? 0)
+    return bal > 0.005 ? s + bal : s
+  }, 0)
+  const collectionRate = totalInvoicedAll > 0 ? Math.round((totalCollectedAll / totalInvoicedAll) * 100) : 0
 
   // ── Debtors: invoices with outstanding balance (always all-time) ──
   const paidByInvoice = new Map<string, number>()
@@ -351,6 +366,47 @@ export default async function ReportsPage({
           <p className="text-xs text-gray-400 mt-1">All time · unpaid invoices</p>
         </div>
       </div>
+
+      {/* ── Revenue Pipeline ────────────────────────────────────── */}
+      <section>
+        <div className="mb-4">
+          <h2 className="text-lg font-semibold text-gray-900">Revenue Pipeline</h2>
+          <p className="text-sm text-gray-500 mt-0.5">Quoted → Invoiced → Collected · all time</p>
+        </div>
+        <div className="bg-white border border-gray-200 rounded-xl p-5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+            <div className="rounded-xl p-3 bg-blue-50">
+              <p className="text-xs font-medium text-blue-700 opacity-70">Quoted</p>
+              <p className="text-sm font-bold text-blue-700 mt-0.5">{formatCurrency(totalQuoted)}</p>
+              <p className="text-xs text-blue-500 mt-1">Open quotations</p>
+            </div>
+            <div className="rounded-xl p-3 bg-violet-50">
+              <p className="text-xs font-medium text-violet-700 opacity-70">Invoiced</p>
+              <p className="text-sm font-bold text-violet-700 mt-0.5">{formatCurrency(totalInvoicedAll)}</p>
+              <p className="text-xs text-violet-500 mt-1">All invoices raised</p>
+            </div>
+            <div className="rounded-xl p-3 bg-emerald-50">
+              <p className="text-xs font-medium text-emerald-700 opacity-70">Collected</p>
+              <p className="text-sm font-bold text-emerald-700 mt-0.5">{formatCurrency(totalCollectedAll)}</p>
+              <p className="text-xs text-emerald-500 mt-1">Payments received</p>
+            </div>
+            <div className="rounded-xl p-3 bg-red-50">
+              <p className="text-xs font-medium text-red-700 opacity-70">Outstanding</p>
+              <p className="text-sm font-bold text-red-700 mt-0.5">{formatCurrency(totalOutstandingAll)}</p>
+              <p className="text-xs text-red-500 mt-1">Unpaid balances</p>
+            </div>
+          </div>
+          <div>
+            <div className="flex justify-between text-xs text-gray-500 mb-1.5">
+              <span>Collection rate</span>
+              <span className="font-medium">{collectionRate}% of invoiced</span>
+            </div>
+            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div className="h-full bg-emerald-500 rounded-full transition-all" style={{ width: `${collectionRate}%` }} />
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* ── Debtors Report ─────────────────────────────────────── */}
       <section>
