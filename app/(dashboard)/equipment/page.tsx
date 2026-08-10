@@ -2,8 +2,9 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { formatDate } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
-import { Package, Plus, AlertTriangle, CheckCircle, Users, CalendarClock } from 'lucide-react'
+import { Package, Plus, AlertTriangle, CheckCircle, Users, CalendarClock, Search, X } from 'lucide-react'
 import type { EquipmentWithUser } from '@/types/database'
+import { DeleteEquipmentButton } from '@/components/equipment/DeleteEquipmentButton'
 
 const TYPE_LABELS: Record<string, string> = {
   total_station: 'Total Station',
@@ -37,7 +38,12 @@ function isCalibrationDue(date: string | null): boolean {
   return new Date(date) < new Date()
 }
 
-export default async function EquipmentPage() {
+export default async function EquipmentPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; type?: string; condition?: string }>
+}) {
+  const { q, type, condition } = await searchParams
   const db = createServiceClient()
 
   const { data: equipment } = await db
@@ -45,12 +51,28 @@ export default async function EquipmentPage() {
     .select('*, profiles(full_name)')
     .order('name') as unknown as { data: EquipmentWithUser[] | null }
 
-  const items = equipment ?? []
+  const allItems = equipment ?? []
 
-  const totalAssets = items.length
-  const assigned = items.filter((e) => e.assigned_to_user_id).length
-  const lowStock = items.filter((e) => e.stock_qty < e.min_stock_qty).length
-  const calibrationDue = items.filter((e) => isCalibrationDue(e.last_calibration_date)).length
+  // KPI cards always reflect the full unfiltered dataset
+  const totalAssets = allItems.length
+  const assigned = allItems.filter((e) => e.assigned_to_user_id).length
+  const lowStock = allItems.filter((e) => e.stock_qty < e.min_stock_qty).length
+  const calibrationDue = allItems.filter((e) => isCalibrationDue(e.last_calibration_date)).length
+
+  // Apply filters in-memory
+  let items = allItems
+  if (q) {
+    const lower = q.toLowerCase()
+    items = items.filter(
+      (e) =>
+        e.name.toLowerCase().includes(lower) ||
+        (e.serial_no?.toLowerCase().includes(lower) ?? false)
+    )
+  }
+  if (type) items = items.filter((e) => e.type === type)
+  if (condition) items = items.filter((e) => e.condition === condition)
+
+  const hasFilters = !!(q || type || condition)
 
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto">
@@ -127,16 +149,72 @@ export default async function EquipmentPage() {
         </div>
       </div>
 
+      {/* Filters */}
+      <form method="GET" className="flex flex-wrap items-center gap-3 mb-4">
+        <div className="relative">
+          <Search className="absolute left-2.5 top-2.5 w-4 h-4 text-gray-400 pointer-events-none" />
+          <input
+            name="q"
+            defaultValue={q}
+            placeholder="Search name or serial..."
+            className="pl-8 pr-4 h-9 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-56"
+          />
+        </div>
+        <select
+          name="type"
+          defaultValue={type ?? ''}
+          className="h-9 rounded-md border border-gray-300 bg-white text-sm px-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">All Types</option>
+          {Object.entries(TYPE_LABELS).map(([value, label]) => (
+            <option key={value} value={value}>{label}</option>
+          ))}
+        </select>
+        <select
+          name="condition"
+          defaultValue={condition ?? ''}
+          className="h-9 rounded-md border border-gray-300 bg-white text-sm px-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">All Conditions</option>
+          {Object.entries(CONDITION_LABELS).map(([value, label]) => (
+            <option key={value} value={value}>{label}</option>
+          ))}
+        </select>
+        <button
+          type="submit"
+          className="h-9 px-4 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
+        >
+          Filter
+        </button>
+        {hasFilters && (
+          <Link
+            href="/equipment"
+            className="inline-flex items-center gap-1 h-9 px-3 text-sm text-gray-500 hover:text-gray-700 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
+          >
+            <X className="w-3.5 h-3.5" />Clear
+          </Link>
+        )}
+      </form>
+
       {/* Table */}
       {items.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
           <Package className="w-10 h-10 mx-auto mb-3 text-gray-200" />
-          <p className="text-lg font-medium">No equipment registered</p>
-          <p className="text-sm mt-1">Add your first asset above</p>
+          {hasFilters ? (
+            <>
+              <p className="text-lg font-medium">No equipment matched</p>
+              <p className="text-sm mt-1">Try adjusting your search or filters</p>
+            </>
+          ) : (
+            <>
+              <p className="text-lg font-medium">No equipment registered</p>
+              <p className="text-sm mt-1">Add your first asset above</p>
+            </>
+          )}
         </div>
       ) : (
         <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
-          <table className="w-full min-w-[800px] text-sm">
+          <table className="w-full min-w-[900px] text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50">
                 <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Name</th>
@@ -146,7 +224,7 @@ export default async function EquipmentPage() {
                 <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Assigned To</th>
                 <th className="text-center px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Stock</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Calibration</th>
-                <th className="px-4 py-3 w-16" />
+                <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -195,12 +273,15 @@ export default async function EquipmentPage() {
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      <Link
-                        href={`/equipment/${item.id}`}
-                        className="text-xs text-blue-600 hover:underline"
-                      >
-                        View
-                      </Link>
+                      <div className="flex items-center gap-3 justify-end">
+                        <Link
+                          href={`/equipment/${item.id}`}
+                          className="text-xs text-blue-600 hover:underline"
+                        >
+                          View
+                        </Link>
+                        <DeleteEquipmentButton equipmentId={item.id} name={item.name} />
+                      </div>
                     </td>
                   </tr>
                 )
