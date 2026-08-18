@@ -380,7 +380,14 @@ export default async function SurveyJobDetailPage({ params }: { params: Promise<
                 </div>
                 {surveyFee > 0 && (
                   <div className="flex justify-between text-sm">
-                    <dt className="text-gray-500">Survey Type Fee</dt>
+                    <dt className="text-gray-500">
+                      Survey Type Fee
+                      {job.quoted_amount_updated_at && (
+                        <span className="block text-xs text-gray-400 font-normal">
+                          Updated {formatDate(job.quoted_amount_updated_at)}
+                        </span>
+                      )}
+                    </dt>
                     <dd className="font-medium text-gray-900">{formatCurrency(surveyFee)}</dd>
                   </div>
                 )}

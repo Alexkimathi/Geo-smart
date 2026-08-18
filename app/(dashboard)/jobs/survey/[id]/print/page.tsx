@@ -222,7 +222,7 @@ export default async function SurveyJobPrintPage({
                 {/* Survey Type Fee row */}
                 {surveyFee > 0 && (
                   <tr>
-                    <td className="px-3 py-2 text-gray-500 whitespace-nowrap">{formatDate(job.start_date ?? job.created_at)}</td>
+                    <td className="px-3 py-2 text-gray-500 whitespace-nowrap">{formatDate(job.quoted_amount_updated_at ?? job.start_date ?? job.created_at)}</td>
                     <td className="px-3 py-2 text-gray-600">Survey Fee</td>
                     <td className="px-3 py-2 text-gray-900">Survey Type Fee ({job.survey_type})</td>
                     <td className="px-3 py-2 text-right font-medium text-gray-900">{formatCurrency(surveyFee)}</td>
