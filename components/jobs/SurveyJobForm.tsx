@@ -99,6 +99,20 @@ export function SurveyJobForm({ clients, job, defaultClientId, action, onSuccess
           </NativeSelect>
         </div>
 
+        {/* Quoted Amount */}
+        <div className="space-y-1.5">
+          <Label htmlFor="quoted_amount">Survey Type Fee (KES)</Label>
+          <Input
+            id="quoted_amount"
+            name="quoted_amount"
+            type="number"
+            min="0"
+            step="1"
+            defaultValue={job?.quoted_amount ?? ''}
+            placeholder="0"
+          />
+        </div>
+
         {/* Start Date */}
         <div className="space-y-1.5">
           <Label htmlFor="start_date">Start Date</Label>

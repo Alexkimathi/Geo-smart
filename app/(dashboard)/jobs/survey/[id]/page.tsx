@@ -106,7 +106,8 @@ export default async function SurveyJobDetailPage({ params }: { params: Promise<
   const totalInvoiced = (invoices ?? []).reduce((s, inv) => s + inv.total, 0)
   const totalExpenses = (expenses ?? []).reduce((s, e) => s + e.amount, 0)
   const totalLpos = (lpos ?? []).reduce((s, l) => s + l.total, 0)
-  const totalCosts = totalExpenses + totalLpos
+  const surveyFee = job?.quoted_amount ?? 0
+  const totalCosts = totalExpenses + totalLpos + surveyFee
   const netMargin = totalInvoiced - totalCosts
   const marginPct = totalInvoiced > 0 ? (netMargin / totalInvoiced) * 100 : null
 
@@ -377,6 +378,12 @@ export default async function SurveyJobDetailPage({ params }: { params: Promise<
                   <dt className="text-gray-500">Invoiced</dt>
                   <dd className="font-medium text-gray-900">{formatCurrency(totalInvoiced)}</dd>
                 </div>
+                {surveyFee > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <dt className="text-gray-500">Survey Type Fee</dt>
+                    <dd className="font-medium text-gray-900">{formatCurrency(surveyFee)}</dd>
+                  </div>
+                )}
                 <div className="flex justify-between text-sm">
                   <dt className="text-gray-500">Expenses</dt>
                   <dd className="font-medium text-gray-900">{formatCurrency(totalExpenses)}</dd>

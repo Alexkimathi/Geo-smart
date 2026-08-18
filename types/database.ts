@@ -52,6 +52,7 @@ export interface SurveyJob {
   start_date: string | null
   end_date: string | null
   status: JobStatusSurvey
+  quoted_amount: number
   report_file_url: string | null
   drawing_file_url: string | null
   notes: string | null

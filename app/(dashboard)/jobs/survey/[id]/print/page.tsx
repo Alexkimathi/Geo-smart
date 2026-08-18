@@ -67,8 +67,10 @@ export default async function SurveyJobPrintPage({
     equipmentList = equip ?? []
   }
 
+  const surveyFee = job.quoted_amount ?? 0
   const totalExpenses = (expenses ?? []).reduce((s, e) => s + e.amount, 0)
   const totalLpos = (lpos ?? []).reduce((s, l) => s + l.total, 0)
+  const totalCosts = surveyFee + totalExpenses + totalLpos
   const printDate = new Date().toLocaleDateString('en-KE', { day: 'numeric', month: 'long', year: 'numeric' })
 
   return (
@@ -131,6 +133,12 @@ export default async function SurveyJobPrintPage({
                 <td className="py-2 text-gray-500">End Date</td>
                 <td className="py-2 text-gray-900">{formatDate(job.end_date)}</td>
               </tr>
+              {surveyFee > 0 && (
+                <tr className="border-b border-gray-100">
+                  <td className="py-2 text-gray-500">Survey Type Fee</td>
+                  <td className="py-2 font-semibold text-gray-900" colSpan={3}>{formatCurrency(surveyFee)}</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -270,6 +278,39 @@ export default async function SurveyJobPrintPage({
           <div className="mb-6 p-4 border border-gray-200 rounded-lg">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Notes</p>
             <p className="text-sm text-gray-700 whitespace-pre-wrap">{job.notes}</p>
+          </div>
+        )}
+
+        {/* Financial Summary */}
+        {(surveyFee > 0 || totalExpenses > 0 || totalLpos > 0) && (
+          <div className="mb-8 p-4 border border-gray-200 rounded-lg">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Financial Summary</p>
+            <table className="w-full text-sm">
+              <tbody>
+                {surveyFee > 0 && (
+                  <tr className="border-b border-gray-100">
+                    <td className="py-1.5 text-gray-600">Survey Type Fee</td>
+                    <td className="py-1.5 text-right font-medium text-gray-900">{formatCurrency(surveyFee)}</td>
+                  </tr>
+                )}
+                {totalExpenses > 0 && (
+                  <tr className="border-b border-gray-100">
+                    <td className="py-1.5 text-gray-600">Other Expenses</td>
+                    <td className="py-1.5 text-right font-medium text-gray-900">{formatCurrency(totalExpenses)}</td>
+                  </tr>
+                )}
+                {totalLpos > 0 && (
+                  <tr className="border-b border-gray-100">
+                    <td className="py-1.5 text-gray-600">LPOs</td>
+                    <td className="py-1.5 text-right font-medium text-gray-900">{formatCurrency(totalLpos)}</td>
+                  </tr>
+                )}
+                <tr className="border-b border-gray-100 font-semibold">
+                  <td className="py-1.5 text-gray-800">Total Costs</td>
+                  <td className="py-1.5 text-right text-gray-900">{formatCurrency(totalCosts)}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         )}
 
