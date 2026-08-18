@@ -290,6 +290,7 @@ export default async function SurveyJobPrintPage({
       </div>
 
       <style>{`
+        @page { margin: 0; }
         @media print {
           .no-print { display: none !important; }
           body { margin: 0; }
