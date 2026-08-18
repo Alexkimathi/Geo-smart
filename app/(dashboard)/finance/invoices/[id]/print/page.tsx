@@ -145,7 +145,7 @@ export default async function InvoicePrintPage({
                       <td className="py-1.5 text-right text-gray-800">{formatCurrency(doc.amount)}</td>
                     </tr>
                     <tr className="border-b border-gray-100">
-                      <td className="py-1.5 text-gray-600">Tax ({doc.tax}%)</td>
+                      <td className="py-1.5 text-gray-600">{doc.tax <= 100 ? `VAT (${doc.tax}%)` : 'VAT'}</td>
                       <td className="py-1.5 text-right text-gray-800">{formatCurrency(doc.total - doc.amount)}</td>
                     </tr>
                     <tr>

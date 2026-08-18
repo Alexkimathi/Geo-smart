@@ -26,7 +26,8 @@ const documentSchema = z.object({
   job_type: z.enum(['survey', 'construction']).optional(),
   job_id: z.string().optional(),
   due_date: z.string().optional(),
-  tax: z.coerce.number().min(0).max(100).default(0),
+  tax: z.coerce.number().min(0).default(0),
+  tax_type: z.enum(['percent', 'amount']).default('percent'),
   notes: z.string().optional(),
   line_items: z.string().transform((v) => {
     try { return JSON.parse(v) } catch { return [] }
@@ -52,10 +53,11 @@ const expenseSchema = z.object({
 })
 
 // ─── Helpers ─────────────────────────────────────────────────
-function calcTotals(lineItems: unknown[], taxPct: number) {
+function calcTotals(lineItems: unknown[], taxValue: number, taxType: 'percent' | 'amount' = 'percent') {
   const items = lineItems.map((i) => lineItemSchema.safeParse(i))
   const subtotal = items.reduce((sum, r) => sum + (r.success ? r.data.amount : 0), 0)
-  const total = subtotal * (1 + taxPct / 100)
+  const taxAmount = taxType === 'percent' ? subtotal * (taxValue / 100) : taxValue
+  const total = subtotal + taxAmount
   return { amount: subtotal, total }
 }
 
@@ -74,8 +76,8 @@ export async function createDocumentAction(
   const parsed = documentSchema.safeParse(raw)
   if (!parsed.success) return { error: parsed.error.issues[0].message }
 
-  const { tax, line_items, client_id, job_type, job_id, due_date, notes } = parsed.data
-  const { amount, total } = calcTotals(line_items as unknown[], tax)
+  const { tax, tax_type, line_items, client_id, job_type, job_id, due_date, notes } = parsed.data
+  const { amount, total } = calcTotals(line_items as unknown[], tax, tax_type)
 
   const db = createServiceClient()
   const { data: doc, error } = await db
@@ -118,8 +120,8 @@ export async function updateDocumentAction(
   const parsed = documentSchema.safeParse(raw)
   if (!parsed.success) return { error: parsed.error.issues[0].message }
 
-  const { tax, line_items, client_id, job_type, job_id, due_date, notes } = parsed.data
-  const { amount, total } = calcTotals(line_items as unknown[], tax)
+  const { tax, tax_type, line_items, client_id, job_type, job_id, due_date, notes } = parsed.data
+  const { amount, total } = calcTotals(line_items as unknown[], tax, tax_type)
 
   const db = createServiceClient()
   const { error } = await db

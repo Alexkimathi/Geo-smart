@@ -137,7 +137,7 @@ export default async function InvoiceDetailPage({
                 <span>Subtotal</span><span>{formatCurrency(doc.amount)}</span>
               </div>
               <div className="flex justify-between text-sm text-gray-600">
-                <span>Tax ({doc.tax}%)</span>
+                <span>{doc.tax <= 100 ? `VAT (${doc.tax}%)` : 'VAT'}</span>
                 <span>{formatCurrency(doc.total - doc.amount)}</span>
               </div>
               <div className="flex justify-between text-sm font-bold text-gray-900 pt-1.5 border-t border-gray-100">
