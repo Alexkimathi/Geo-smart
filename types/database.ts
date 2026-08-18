@@ -5,7 +5,7 @@
 
 export type UserRole = 'admin' | 'manager' | 'surveyor' | 'site_engineer' | 'accountant'
 export type SurveyType = 'Topo' | 'Cadastral' | 'Control' | 'Setting Out'
-export type ConstructionType = 'House' | 'Commercial' | 'Road' | 'Tender'
+export type ConstructionType = string
 export type JobStatusSurvey = 'New' | 'In Progress' | 'QA' | 'Delivered' | 'Paid' | 'On Hold'
 export type JobStatusConstruction = 'Ongoing' | 'Completed' | 'Handover' | 'Tender' | 'On Hold'
 export type EquipmentType = 'total_station' | 'gps' | 'level' | 'drone' | 'vehicle' | 'material' | 'tool' | 'other'

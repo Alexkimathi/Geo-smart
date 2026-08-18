@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useEffect } from 'react'
+import { useActionState, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,6 +9,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { NativeSelect } from '@/components/ui/native-select'
 import type { Client, ConstructionJob } from '@/types/database'
 import type { JobFormState } from '@/app/(dashboard)/jobs/construction/actions'
+
+const PRESET_TYPES = ['House', 'Commercial', 'Road', 'Tender', 'Perimeter Wall', 'Renovation', 'Other']
 
 interface Props {
   clients: Client[]
@@ -20,6 +22,12 @@ interface Props {
 export function ConstructionJobForm({ clients, job, defaultClientId, action }: Props) {
   const router = useRouter()
   const [state, formAction, pending] = useActionState(action, {})
+
+  // Determine if the existing job type is a preset or custom
+  const existingType = job?.project_type ?? ''
+  const isCustom = existingType && !PRESET_TYPES.includes(existingType)
+  const [projectTypeSelect, setProjectTypeSelect] = useState(isCustom ? 'Other' : existingType)
+  const [customType, setCustomType] = useState(isCustom ? existingType : '')
 
   useEffect(() => {
     if (state.success) {
@@ -64,19 +72,33 @@ export function ConstructionJobForm({ clients, job, defaultClientId, action }: P
 
         {/* Project Type */}
         <div className="space-y-1.5">
-          <Label htmlFor="project_type">Project Type *</Label>
-          <NativeSelect
-            id="project_type"
+          <Label htmlFor="project_type_select">Project Type *</Label>
+          {/* Hidden input carries the final submitted value */}
+          <input
+            type="hidden"
             name="project_type"
+            value={projectTypeSelect === 'Other' ? customType : projectTypeSelect}
+          />
+          <NativeSelect
+            id="project_type_select"
+            value={projectTypeSelect}
+            onChange={(e) => setProjectTypeSelect(e.target.value)}
             required
-            defaultValue={job?.project_type ?? ''}
           >
             <option value="">Select type...</option>
-            <option value="House">House</option>
-            <option value="Commercial">Commercial</option>
-            <option value="Road">Road</option>
-            <option value="Tender">Tender</option>
+            {PRESET_TYPES.map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))}
           </NativeSelect>
+          {projectTypeSelect === 'Other' && (
+            <Input
+              placeholder="Describe project type..."
+              value={customType}
+              onChange={(e) => setCustomType(e.target.value)}
+              required
+              className="h-9 text-sm mt-2"
+            />
+          )}
         </div>
 
         {/* Contract Value */}

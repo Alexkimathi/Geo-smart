@@ -8,7 +8,7 @@ import { z } from 'zod'
 const constructionJobSchema = z.object({
   client_id: z.string().min(1, 'Client is required'),
   project_name: z.string().min(1, 'Project name is required'),
-  project_type: z.enum(['House', 'Commercial', 'Road', 'Tender']),
+  project_type: z.string().min(1, 'Project type is required'),
   contract_value: z.coerce.number().min(0).optional(),
   boq_total: z.coerce.number().min(0).optional(),
   start_date: z.string().optional(),
