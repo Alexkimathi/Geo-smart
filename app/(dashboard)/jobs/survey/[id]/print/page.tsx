@@ -205,10 +205,10 @@ export default async function SurveyJobPrintPage({
           </div>
         )}
 
-        {/* Expenses */}
-        {(expenses ?? []).length > 0 && (
+        {/* Project Costs — single unified breakdown */}
+        {(surveyFee > 0 || (expenses ?? []).length > 0 || (lpos ?? []).length > 0) && (
           <div className="mb-6">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Expenses</p>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Project Costs</p>
             <table className="w-full text-sm border border-gray-200 rounded-lg overflow-hidden">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
@@ -219,54 +219,38 @@ export default async function SurveyJobPrintPage({
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
+                {/* Survey Type Fee row */}
+                {surveyFee > 0 && (
+                  <tr>
+                    <td className="px-3 py-2 text-gray-500">—</td>
+                    <td className="px-3 py-2 text-gray-600">Survey Fee</td>
+                    <td className="px-3 py-2 text-gray-900">Survey Type Fee ({job.survey_type})</td>
+                    <td className="px-3 py-2 text-right font-medium text-gray-900">{formatCurrency(surveyFee)}</td>
+                  </tr>
+                )}
+                {/* Expense rows */}
                 {(expenses ?? []).map((e) => (
                   <tr key={e.id}>
-                    <td className="px-3 py-2 text-gray-600 whitespace-nowrap">{formatDate(e.expense_date)}</td>
+                    <td className="px-3 py-2 text-gray-500 whitespace-nowrap">{formatDate(e.expense_date)}</td>
                     <td className="px-3 py-2 text-gray-600">{e.category}</td>
                     <td className="px-3 py-2 text-gray-900">{e.description}</td>
                     <td className="px-3 py-2 text-right font-medium text-gray-900">{formatCurrency(e.amount)}</td>
                   </tr>
                 ))}
-              </tbody>
-              <tfoot>
-                <tr className="bg-gray-50 border-t border-gray-200 font-semibold">
-                  <td colSpan={3} className="px-3 py-2 text-gray-700">Total Expenses</td>
-                  <td className="px-3 py-2 text-right text-gray-900">{formatCurrency(totalExpenses)}</td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        )}
-
-        {/* LPOs */}
-        {(lpos ?? []).length > 0 && (
-          <div className="mb-6">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Local Purchase Orders</p>
-            <table className="w-full text-sm border border-gray-200 rounded-lg overflow-hidden">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="text-left px-3 py-2 text-xs font-medium text-gray-500">LPO No.</th>
-                  <th className="text-left px-3 py-2 text-xs font-medium text-gray-500">Supplier</th>
-                  <th className="text-left px-3 py-2 text-xs font-medium text-gray-500">Date</th>
-                  <th className="text-left px-3 py-2 text-xs font-medium text-gray-500">Status</th>
-                  <th className="text-right px-3 py-2 text-xs font-medium text-gray-500">Amount</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
+                {/* LPO rows */}
                 {(lpos ?? []).map((l, i) => (
                   <tr key={i}>
-                    <td className="px-3 py-2 font-mono text-xs text-gray-700">{l.lpo_no}</td>
-                    <td className="px-3 py-2 font-medium text-gray-900">{l.supplier_name}</td>
-                    <td className="px-3 py-2 text-gray-600 whitespace-nowrap">{formatDate(l.issued_date)}</td>
-                    <td className="px-3 py-2 text-gray-600">{l.status}</td>
+                    <td className="px-3 py-2 text-gray-500 whitespace-nowrap">{formatDate(l.issued_date)}</td>
+                    <td className="px-3 py-2 text-gray-600">LPO — {l.lpo_no}</td>
+                    <td className="px-3 py-2 text-gray-900">{l.supplier_name}</td>
                     <td className="px-3 py-2 text-right font-medium text-gray-900">{formatCurrency(l.total)}</td>
                   </tr>
                 ))}
               </tbody>
               <tfoot>
                 <tr className="bg-gray-50 border-t border-gray-200 font-semibold">
-                  <td colSpan={4} className="px-3 py-2 text-gray-700">Total LPOs</td>
-                  <td className="px-3 py-2 text-right text-gray-900">{formatCurrency(totalLpos)}</td>
+                  <td colSpan={3} className="px-3 py-2 text-gray-800">Total Costs</td>
+                  <td className="px-3 py-2 text-right text-gray-900">{formatCurrency(totalCosts)}</td>
                 </tr>
               </tfoot>
             </table>
@@ -278,39 +262,6 @@ export default async function SurveyJobPrintPage({
           <div className="mb-6 p-4 border border-gray-200 rounded-lg">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Notes</p>
             <p className="text-sm text-gray-700 whitespace-pre-wrap">{job.notes}</p>
-          </div>
-        )}
-
-        {/* Financial Summary */}
-        {(surveyFee > 0 || totalExpenses > 0 || totalLpos > 0) && (
-          <div className="mb-8 p-4 border border-gray-200 rounded-lg">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Financial Summary</p>
-            <table className="w-full text-sm">
-              <tbody>
-                {surveyFee > 0 && (
-                  <tr className="border-b border-gray-100">
-                    <td className="py-1.5 text-gray-600">Survey Type Fee</td>
-                    <td className="py-1.5 text-right font-medium text-gray-900">{formatCurrency(surveyFee)}</td>
-                  </tr>
-                )}
-                {totalExpenses > 0 && (
-                  <tr className="border-b border-gray-100">
-                    <td className="py-1.5 text-gray-600">Other Expenses</td>
-                    <td className="py-1.5 text-right font-medium text-gray-900">{formatCurrency(totalExpenses)}</td>
-                  </tr>
-                )}
-                {totalLpos > 0 && (
-                  <tr className="border-b border-gray-100">
-                    <td className="py-1.5 text-gray-600">LPOs</td>
-                    <td className="py-1.5 text-right font-medium text-gray-900">{formatCurrency(totalLpos)}</td>
-                  </tr>
-                )}
-                <tr className="border-b border-gray-100 font-semibold">
-                  <td className="py-1.5 text-gray-800">Total Costs</td>
-                  <td className="py-1.5 text-right text-gray-900">{formatCurrency(totalCosts)}</td>
-                </tr>
-              </tbody>
-            </table>
           </div>
         )}
 
