@@ -2,7 +2,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, Printer, Mail, Phone, DollarSign, Pencil } from 'lucide-react'
+import { ChevronLeft, Printer, Mail, Phone, DollarSign, Pencil, FileCheck } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { formatDate, formatCurrency } from '@/lib/utils'
@@ -86,7 +86,12 @@ export default async function InvoiceDetailPage({
           )}
           <Link href={`/finance/invoices/${id}/print`} target="_blank">
             <Button variant="outline" size="sm">
-              <Printer className="w-4 h-4" />Print / PDF
+              <Printer className="w-4 h-4" />Print Invoice
+            </Button>
+          </Link>
+          <Link href={`/finance/invoices/${id}/receipt`} target="_blank">
+            <Button variant="outline" size="sm">
+              <FileCheck className="w-4 h-4" />Print Receipt
             </Button>
           </Link>
           {isAdmin && (

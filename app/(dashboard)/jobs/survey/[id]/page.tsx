@@ -90,6 +90,8 @@ export default async function SurveyJobDetailPage({ params }: { params: Promise<
 
   if (!job) notFound()
 
+  const isSurveyor = profile?.role === 'surveyor'
+
   let activeJobLabel: string | null = null
   if (openTimesheet && openTimesheet.job_id !== id) {
     if (openTimesheet.job_type === 'survey') {
@@ -252,49 +254,51 @@ export default async function SurveyJobDetailPage({ params }: { params: Promise<
             </div>
           </div>
 
-          {/* Expenses */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-gray-900 flex items-center gap-2">
-                <Receipt className="w-4 h-4 text-gray-400" />Expenses
-              </h2>
-              <Link href="/finance/expenses" className="text-xs text-blue-600 hover:underline">
-                Add expense
-              </Link>
-            </div>
-            {expenses && expenses.length > 0 ? (
-              <>
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-100">
-                      <th className="text-left pb-2 text-xs font-medium text-gray-400 uppercase tracking-wide">Date</th>
-                      <th className="text-left pb-2 text-xs font-medium text-gray-400 uppercase tracking-wide">Category</th>
-                      <th className="text-left pb-2 text-xs font-medium text-gray-400 uppercase tracking-wide">Description</th>
-                      <th className="text-right pb-2 text-xs font-medium text-gray-400 uppercase tracking-wide">Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50">
-                    {expenses.map((e) => (
-                      <tr key={e.id}>
-                        <td className="py-2 text-gray-500 whitespace-nowrap">{formatDate(e.expense_date)}</td>
-                        <td className="py-2">
-                          <span className="text-xs font-medium text-gray-600 bg-gray-100 rounded px-1.5 py-0.5">{e.category}</span>
-                        </td>
-                        <td className="py-2 text-gray-700">{e.description}</td>
-                        <td className="py-2 text-right font-medium text-gray-900">{formatCurrency(e.amount)}</td>
+          {/* Expenses — managers/admin/accountant only */}
+          {!isSurveyor && (
+            <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+                  <Receipt className="w-4 h-4 text-gray-400" />Expenses
+                </h2>
+                <Link href="/finance/expenses" className="text-xs text-blue-600 hover:underline">
+                  Add expense
+                </Link>
+              </div>
+              {expenses && expenses.length > 0 ? (
+                <>
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-100">
+                        <th className="text-left pb-2 text-xs font-medium text-gray-400 uppercase tracking-wide">Date</th>
+                        <th className="text-left pb-2 text-xs font-medium text-gray-400 uppercase tracking-wide">Category</th>
+                        <th className="text-left pb-2 text-xs font-medium text-gray-400 uppercase tracking-wide">Description</th>
+                        <th className="text-right pb-2 text-xs font-medium text-gray-400 uppercase tracking-wide">Amount</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <div className="mt-3 pt-3 border-t border-gray-100 flex justify-between text-sm font-semibold text-gray-900">
-                  <span>Total Expenses</span>
-                  <span>{formatCurrency(expenses.reduce((s, e) => s + e.amount, 0))}</span>
-                </div>
-              </>
-            ) : (
-              <p className="text-sm text-gray-400">No expenses recorded for this job</p>
-            )}
-          </div>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {expenses.map((e) => (
+                        <tr key={e.id}>
+                          <td className="py-2 text-gray-500 whitespace-nowrap">{formatDate(e.expense_date)}</td>
+                          <td className="py-2">
+                            <span className="text-xs font-medium text-gray-600 bg-gray-100 rounded px-1.5 py-0.5">{e.category}</span>
+                          </td>
+                          <td className="py-2 text-gray-700">{e.description}</td>
+                          <td className="py-2 text-right font-medium text-gray-900">{formatCurrency(e.amount)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <div className="mt-3 pt-3 border-t border-gray-100 flex justify-between text-sm font-semibold text-gray-900">
+                    <span>Total Expenses</span>
+                    <span>{formatCurrency(expenses.reduce((s, e) => s + e.amount, 0))}</span>
+                  </div>
+                </>
+              ) : (
+                <p className="text-sm text-gray-400">No expenses recorded for this job</p>
+              )}
+            </div>
+          )}
 
           {/* Notes */}
           <JobNotes
@@ -362,44 +366,46 @@ export default async function SurveyJobDetailPage({ params }: { params: Promise<
             )}
           </div>
 
-          {/* Profitability */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <Receipt className="w-4 h-4 text-gray-400" />Profitability
-            </h2>
-            <dl className="space-y-3">
-              <div className="flex justify-between text-sm">
-                <dt className="text-gray-500">Invoiced</dt>
-                <dd className="font-medium text-gray-900">{formatCurrency(totalInvoiced)}</dd>
-              </div>
-              <div className="flex justify-between text-sm">
-                <dt className="text-gray-500">Expenses</dt>
-                <dd className="font-medium text-gray-900">{formatCurrency(totalExpenses)}</dd>
-              </div>
-              {totalLpos > 0 && (
+          {/* Profitability — managers/admin/accountant only */}
+          {!isSurveyor && (
+            <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <Receipt className="w-4 h-4 text-gray-400" />Profitability
+              </h2>
+              <dl className="space-y-3">
                 <div className="flex justify-between text-sm">
-                  <dt className="text-gray-500">LPOs</dt>
-                  <dd className="font-medium text-gray-900">{formatCurrency(totalLpos)}</dd>
+                  <dt className="text-gray-500">Invoiced</dt>
+                  <dd className="font-medium text-gray-900">{formatCurrency(totalInvoiced)}</dd>
                 </div>
+                <div className="flex justify-between text-sm">
+                  <dt className="text-gray-500">Expenses</dt>
+                  <dd className="font-medium text-gray-900">{formatCurrency(totalExpenses)}</dd>
+                </div>
+                {totalLpos > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <dt className="text-gray-500">LPOs</dt>
+                    <dd className="font-medium text-gray-900">{formatCurrency(totalLpos)}</dd>
+                  </div>
+                )}
+                <div className="pt-2 border-t border-gray-100 flex justify-between text-sm font-semibold">
+                  <dt className={netMargin >= 0 ? 'text-emerald-700' : 'text-red-600'}>
+                    Net Margin
+                  </dt>
+                  <dd className={netMargin >= 0 ? 'text-emerald-700' : 'text-red-600'}>
+                    {formatCurrency(netMargin)}
+                    {marginPct !== null && (
+                      <span className="ml-1 text-xs font-normal opacity-75">
+                        ({marginPct.toFixed(1)}%)
+                      </span>
+                    )}
+                  </dd>
+                </div>
+              </dl>
+              {invoices?.length === 0 && (
+                <p className="text-xs text-gray-400 mt-3">No invoices raised yet</p>
               )}
-              <div className="pt-2 border-t border-gray-100 flex justify-between text-sm font-semibold">
-                <dt className={netMargin >= 0 ? 'text-emerald-700' : 'text-red-600'}>
-                  Net Margin
-                </dt>
-                <dd className={netMargin >= 0 ? 'text-emerald-700' : 'text-red-600'}>
-                  {formatCurrency(netMargin)}
-                  {marginPct !== null && (
-                    <span className="ml-1 text-xs font-normal opacity-75">
-                      ({marginPct.toFixed(1)}%)
-                    </span>
-                  )}
-                </dd>
-              </div>
-            </dl>
-            {invoices?.length === 0 && (
-              <p className="text-xs text-gray-400 mt-3">No invoices raised yet</p>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Quick links */}
           <div className="bg-white rounded-xl border border-gray-200 p-5">
@@ -407,12 +413,16 @@ export default async function SurveyJobDetailPage({ params }: { params: Promise<
               <Hash className="w-4 h-4 text-gray-400" />Quick Links
             </h2>
             <div className="space-y-2">
-              <Link href={`/finance/quotations?job=${id}&job_type=survey`}
-                className="block text-sm text-blue-600 hover:underline">Quotations</Link>
-              <Link href={`/finance/invoices?job=${id}&job_type=survey`}
-                className="block text-sm text-blue-600 hover:underline">Invoices</Link>
-              <Link href="/finance/expenses"
-                className="block text-sm text-blue-600 hover:underline">Expenses</Link>
+              {!isSurveyor && (
+                <>
+                  <Link href={`/finance/quotations?job=${id}&job_type=survey`}
+                    className="block text-sm text-blue-600 hover:underline">Quotations</Link>
+                  <Link href={`/finance/invoices?job=${id}&job_type=survey`}
+                    className="block text-sm text-blue-600 hover:underline">Invoices</Link>
+                  <Link href="/finance/expenses"
+                    className="block text-sm text-blue-600 hover:underline">Expenses</Link>
+                </>
+              )}
               <Link href={`/documents?job=${id}&job_type=survey`}
                 className="block text-sm text-blue-600 hover:underline">Documents</Link>
               <Link href={`/timesheets?job=${id}&job_type=survey`}

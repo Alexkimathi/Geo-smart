@@ -1,8 +1,9 @@
 import { createServiceClient } from '@/lib/supabase/service'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
-import { AlertCircle, TrendingUp, Wallet, ShoppingCart, AlertTriangle, DollarSign } from 'lucide-react'
+import { AlertCircle, TrendingUp, Wallet, ShoppingCart, AlertTriangle, DollarSign, Search } from 'lucide-react'
 import { ReportActions } from '@/components/finance/ReportActions'
+import { Paginator } from '@/components/ui/Paginator'
 import type { FinanceDocumentWithClient, Payment, SurveyJob, ConstructionJob, Expense, Lpo, Client } from '@/types/database'
 
 export const dynamic = 'force-dynamic'
@@ -25,12 +26,28 @@ const MONTHS = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ]
 
+const PAGE_SIZE = 25
+
+function pageHref(
+  params: Record<string, string | undefined>,
+  key: string,
+  p: number,
+) {
+  const sp = new URLSearchParams()
+  for (const [k, v] of Object.entries(params)) {
+    if (v && k !== key) sp.set(k, v)
+  }
+  if (p > 1) sp.set(key, String(p))
+  const qs = sp.toString()
+  return `/finance/reports${qs ? `?${qs}` : ''}`
+}
+
 export default async function ReportsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ month?: string; year?: string }>
+  searchParams: Promise<{ month?: string; year?: string; pnl_page?: string; debtors_page?: string; pnl_q?: string }>
 }) {
-  const { month, year } = await searchParams
+  const { month, year, pnl_page, debtors_page, pnl_q } = await searchParams
   const db = createServiceClient()
   const today = new Date().toISOString().split('T')[0]
   const currentYear = new Date().getFullYear()
@@ -113,6 +130,12 @@ export default async function ReportsPage({
     filteredExpenses.reduce((s, e) => s + e.amount, 0) +
     filteredLpos.reduce((s, l) => s + l.total, 0)
 
+  // ── Debtors: invoices with outstanding balance (always all-time) ──
+  const paidByInvoice = new Map<string, number>()
+  for (const p of payments ?? []) {
+    paidByInvoice.set(p.invoice_id, (paidByInvoice.get(p.invoice_id) ?? 0) + p.amount)
+  }
+
   // ── Revenue Pipeline (all-time) ──────────────────────────────
   const totalQuoted = (quotations ?? []).reduce((s, q) => s + q.total, 0)
   const totalInvoicedAll = (invoices ?? []).reduce((s, inv) => s + inv.total, 0)
@@ -122,12 +145,6 @@ export default async function ReportsPage({
     return bal > 0.005 ? s + bal : s
   }, 0)
   const collectionRate = totalInvoicedAll > 0 ? Math.round((totalCollectedAll / totalInvoicedAll) * 100) : 0
-
-  // ── Debtors: invoices with outstanding balance (always all-time) ──
-  const paidByInvoice = new Map<string, number>()
-  for (const p of payments ?? []) {
-    paidByInvoice.set(p.invoice_id, (paidByInvoice.get(p.invoice_id) ?? 0) + p.amount)
-  }
 
   const debtors = (invoices ?? [])
     .map((inv) => ({
@@ -218,6 +235,37 @@ export default async function ReportsPage({
   const totalInvoiced = pnlRows.reduce((s, r) => s + r.invoiced, 0)
   const totalCosts = pnlRows.reduce((s, r) => s + r.costsTotal, 0)
   const totalMargin = totalInvoiced - totalCosts
+
+  // P&L search + pagination
+  const pnlSearched = pnl_q
+    ? pnlRows.filter(
+        (r) =>
+          r.jobNo.toLowerCase().includes(pnl_q.toLowerCase()) ||
+          r.name.toLowerCase().includes(pnl_q.toLowerCase()) ||
+          r.clientName.toLowerCase().includes(pnl_q.toLowerCase())
+      )
+    : pnlRows
+  const pnlPageNum = Math.max(1, parseInt(pnl_page ?? '1', 10) || 1)
+  const pnlTotalPages = Math.ceil(pnlSearched.length / PAGE_SIZE)
+  const pnlCurrentPage = Math.min(pnlPageNum, pnlTotalPages || 1)
+  const pnlPageRows = pnlSearched.slice(
+    (pnlCurrentPage - 1) * PAGE_SIZE,
+    pnlCurrentPage * PAGE_SIZE,
+  )
+  const pnlPageInvoiced = pnlPageRows.reduce((s, r) => s + r.invoiced, 0)
+  const pnlPageCosts = pnlPageRows.reduce((s, r) => s + r.costsTotal, 0)
+  const pnlPageMargin = pnlPageInvoiced - pnlPageCosts
+
+  // Debtors pagination
+  const debtorsPageNum = Math.max(1, parseInt(debtors_page ?? '1', 10) || 1)
+  const debtorsTotalPages = Math.ceil(debtors.length / PAGE_SIZE)
+  const debtorsCurrentPage = Math.min(debtorsPageNum, debtorsTotalPages || 1)
+  const debtorsPageRows = debtors.slice(
+    (debtorsCurrentPage - 1) * PAGE_SIZE,
+    debtorsCurrentPage * PAGE_SIZE,
+  )
+
+  const allParams = { month, year, pnl_page, debtors_page, pnl_q }
 
   // ── CSV data ──────────────────────────────────────────────────
   const debtorsCsv = debtors.map((d) => ({
@@ -442,7 +490,7 @@ export default async function ReportsPage({
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {debtors.map((inv) => (
+                {debtorsPageRows.map((inv) => (
                   <tr key={inv.id} className={inv.daysOverdue > 0 ? 'bg-red-50/40' : 'hover:bg-gray-50'}>
                     <td className="px-4 py-3">
                       <p className="font-medium text-gray-900">{inv.clients?.name ?? '—'}</p>
@@ -480,6 +528,14 @@ export default async function ReportsPage({
             </table>
           </div>
         )}
+        <Paginator
+          page={debtorsCurrentPage}
+          totalPages={debtorsTotalPages}
+          totalCount={debtors.length}
+          pageSize={PAGE_SIZE}
+          prevHref={debtorsCurrentPage > 1 ? pageHref(allParams, 'debtors_page', debtorsCurrentPage - 1) : null}
+          nextHref={debtorsCurrentPage < debtorsTotalPages ? pageHref(allParams, 'debtors_page', debtorsCurrentPage + 1) : null}
+        />
       </section>
 
       {/* ── Creditors Report ────────────────────────────────────── */}
@@ -641,6 +697,20 @@ export default async function ReportsPage({
           </div>
         </div>
 
+        <form method="GET" className="mb-3">
+          {month && <input type="hidden" name="month" value={month} />}
+          {year && <input type="hidden" name="year" value={year} />}
+          <div className="relative max-w-xs">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+            <input
+              type="text"
+              name="pnl_q"
+              defaultValue={pnl_q ?? ''}
+              placeholder="Search job, project or client..."
+              className="h-9 w-full pl-8 pr-3 rounded-lg border border-gray-200 bg-white text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </form>
         <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
           <table className="w-full min-w-[720px] text-sm">
             <thead>
@@ -656,11 +726,11 @@ export default async function ReportsPage({
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {pnlRows.length === 0 ? (
+              {pnlSearched.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="px-4 py-10 text-center text-gray-400">No jobs found</td>
                 </tr>
-              ) : pnlRows.map((row) => (
+              ) : pnlPageRows.map((row) => (
                 <tr key={row.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3">
                     <a href={`/jobs/${row.type.toLowerCase().includes('survey') || !['House','Commercial','Road','Tender'].includes(row.type) ? 'survey' : 'construction'}/${row.id}`}
@@ -685,19 +755,29 @@ export default async function ReportsPage({
             </tbody>
             <tfoot>
               <tr className="bg-gray-50 border-t border-gray-200 font-semibold">
-                <td colSpan={4} className="px-4 py-3 text-gray-700">Total</td>
-                <td className="px-4 py-3 text-right text-gray-900">{formatCurrency(totalInvoiced)}</td>
-                <td className="px-4 py-3 text-right text-gray-900">{formatCurrency(totalCosts)}</td>
-                <td className={`px-4 py-3 text-right ${totalMargin >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                  {formatCurrency(totalMargin)}
+                <td colSpan={4} className="px-4 py-3 text-gray-700">
+                  {pnlTotalPages > 1 ? 'Page total' : 'Total'}
                 </td>
-                <td className={`px-4 py-3 text-right text-xs ${totalMargin >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                  {totalInvoiced > 0 ? `${((totalMargin / totalInvoiced) * 100).toFixed(1)}%` : '—'}
+                <td className="px-4 py-3 text-right text-gray-900">{formatCurrency(pnlPageInvoiced)}</td>
+                <td className="px-4 py-3 text-right text-gray-900">{formatCurrency(pnlPageCosts)}</td>
+                <td className={`px-4 py-3 text-right ${pnlPageMargin >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                  {formatCurrency(pnlPageMargin)}
+                </td>
+                <td className={`px-4 py-3 text-right text-xs ${pnlPageMargin >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                  {pnlPageInvoiced > 0 ? `${((pnlPageMargin / pnlPageInvoiced) * 100).toFixed(1)}%` : '—'}
                 </td>
               </tr>
             </tfoot>
           </table>
         </div>
+        <Paginator
+          page={pnlCurrentPage}
+          totalPages={pnlTotalPages}
+          totalCount={pnlSearched.length}
+          pageSize={PAGE_SIZE}
+          prevHref={pnlCurrentPage > 1 ? pageHref(allParams, 'pnl_page', pnlCurrentPage - 1) : null}
+          nextHref={pnlCurrentPage < pnlTotalPages ? pageHref(allParams, 'pnl_page', pnlCurrentPage + 1) : null}
+        />
       </section>
     </div>
   )

@@ -1,4 +1,5 @@
 import { createServiceClient } from '@/lib/supabase/service'
+import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -44,6 +45,25 @@ export default async function SurveyJobsPage({
   const page = Math.max(1, parseInt(pageParam ?? '1', 10) || 1)
   const supabase = createServiceClient()
 
+  // Determine current user role
+  const auth = await createClient()
+  const { data: { user } } = await auth.auth.getUser()
+  const { data: profile } = user
+    ? await supabase.from('profiles').select('role').eq('id', user.id).single() as unknown as { data: { role: string } | null }
+    : { data: null }
+  const isSurveyor = profile?.role === 'surveyor'
+
+  // Surveyors only see jobs they are assigned to via job_team
+  let surveyorJobIds: string[] | null = null
+  if (isSurveyor && user) {
+    const { data: teamRows } = await supabase
+      .from('job_team')
+      .select('job_id')
+      .eq('user_id', user.id)
+      .eq('job_type', 'survey') as unknown as { data: { job_id: string }[] | null }
+    surveyorJobIds = (teamRows ?? []).map((r) => r.job_id)
+  }
+
   let query = supabase
     .from('survey_jobs')
     .select('*, clients(id, name, company)')
@@ -51,6 +71,11 @@ export default async function SurveyJobsPage({
     .order('created_at', { ascending: false })
 
   if (status) query = query.eq('status', status)
+  if (isSurveyor) {
+    // Restrict to assigned jobs; use sentinel UUID if none assigned so we get empty results
+    const ids = surveyorJobIds?.length ? surveyorJobIds : ['00000000-0000-0000-0000-000000000000']
+    query = query.in('id', ids)
+  }
 
   const { data: jobs, error: jobsError } = await query as unknown as {
     data: (SurveyJob & { clients: Pick<Client, 'id' | 'name' | 'company'> | null })[] | null
