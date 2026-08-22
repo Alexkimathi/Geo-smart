@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useEffect } from 'react'
+import { useActionState, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -19,9 +19,20 @@ interface Props {
   onSuccess?: (jobId?: string) => void
 }
 
+const KNOWN_SURVEY_TYPES = [
+  'Topo', 'Cadastral', 'Control', 'Setting Out',
+  'Transfer of Titles', 'Sectional Survey', 'Engineering Survey',
+  'Professional Survey Consultation', 'GIS Remote Sensing', 'Drone Survey',
+]
+
 export function SurveyJobForm({ clients, job, defaultClientId, action, onSuccess }: Props) {
   const router = useRouter()
   const [state, formAction, pending] = useActionState(action, {})
+
+  const existingType = job?.survey_type ?? ''
+  const existingIsOther = existingType !== '' && !KNOWN_SURVEY_TYPES.includes(existingType)
+  const [surveyTypeSelect, setSurveyTypeSelect] = useState(existingIsOther ? 'Other' : existingType)
+  const [customSurveyType, setCustomSurveyType] = useState(existingIsOther ? existingType : '')
 
   useEffect(() => {
     if (state.success) {
@@ -85,23 +96,43 @@ export function SurveyJobForm({ clients, job, defaultClientId, action, onSuccess
         {/* Survey Type */}
         <div className="space-y-1.5">
           <Label htmlFor="survey_type">Survey Type *</Label>
+          <input
+            type="hidden"
+            name="survey_type"
+            value={surveyTypeSelect === 'Other' ? customSurveyType : surveyTypeSelect}
+          />
           <NativeSelect
             id="survey_type"
-            name="survey_type"
             required
-            defaultValue={job?.survey_type ?? ''}
+            value={surveyTypeSelect}
+            onChange={(e) => setSurveyTypeSelect(e.target.value)}
           >
             <option value="">Select type...</option>
             <option value="Topo">Topographic Survey</option>
             <option value="Cadastral">Cadastral Survey</option>
             <option value="Control">Control Survey</option>
             <option value="Setting Out">Setting Out</option>
+            <option value="Transfer of Titles">Transfer of Titles</option>
+            <option value="Sectional Survey">Sectional Survey</option>
+            <option value="Engineering Survey">Engineering Survey</option>
+            <option value="Professional Survey Consultation">Professional Survey Consultation</option>
+            <option value="GIS Remote Sensing">GIS Remote Sensing</option>
+            <option value="Drone Survey">Drone Survey</option>
+            <option value="Other">Other...</option>
           </NativeSelect>
+          {surveyTypeSelect === 'Other' && (
+            <Input
+              placeholder="Specify survey type..."
+              value={customSurveyType}
+              onChange={(e) => setCustomSurveyType(e.target.value)}
+              required
+            />
+          )}
         </div>
 
         {/* Quoted Amount */}
         <div className="space-y-1.5">
-          <Label htmlFor="quoted_amount">Survey Type Fee (KES)</Label>
+          <Label htmlFor="quoted_amount">Contract Value (KES)</Label>
           <Input
             id="quoted_amount"
             name="quoted_amount"

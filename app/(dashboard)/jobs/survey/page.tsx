@@ -24,6 +24,12 @@ const SURVEY_TYPE_LABELS: Record<string, string> = {
   Cadastral: 'Cadastral',
   Control: 'Control',
   'Setting Out': 'Setting Out',
+  'Transfer of Titles': 'Transfer of Titles',
+  'Sectional Survey': 'Sectional Survey',
+  'Engineering Survey': 'Engineering Survey',
+  'Professional Survey Consultation': 'Professional Survey Consult.',
+  'GIS Remote Sensing': 'GIS Remote Sensing',
+  'Drone Survey': 'Drone Survey',
 }
 
 function pageHref(params: Record<string, string | undefined>, p: number) {

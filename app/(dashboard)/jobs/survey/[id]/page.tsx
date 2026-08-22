@@ -20,6 +20,12 @@ const SURVEY_TYPE_LABELS: Record<string, string> = {
   Cadastral: 'Cadastral Survey',
   Control: 'Control Survey',
   'Setting Out': 'Setting Out',
+  'Transfer of Titles': 'Transfer of Titles',
+  'Sectional Survey': 'Sectional Survey',
+  'Engineering Survey': 'Engineering Survey',
+  'Professional Survey Consultation': 'Professional Survey Consultation',
+  'GIS Remote Sensing': 'GIS Remote Sensing',
+  'Drone Survey': 'Drone Survey',
 }
 
 const STATUS_COLORS: Record<string, 'gray' | 'blue' | 'yellow' | 'purple' | 'green'> = {
@@ -381,7 +387,7 @@ export default async function SurveyJobDetailPage({ params }: { params: Promise<
                 {surveyFee > 0 && (
                   <div className="flex justify-between text-sm">
                     <dt className="text-gray-500">
-                      Survey Type Fee
+                      Contract Value
                       {job.quoted_amount_updated_at && (
                         <span className="block text-xs text-gray-400 font-normal">
                           Updated {formatDate(job.quoted_amount_updated_at)}

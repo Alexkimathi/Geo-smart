@@ -9,6 +9,12 @@ const SURVEY_TYPE_LABELS: Record<string, string> = {
   Cadastral: 'Cadastral Survey',
   Control: 'Control Survey',
   'Setting Out': 'Setting Out',
+  'Transfer of Titles': 'Transfer of Titles',
+  'Sectional Survey': 'Sectional Survey',
+  'Engineering Survey': 'Engineering Survey',
+  'Professional Survey Consultation': 'Professional Survey Consultation',
+  'GIS Remote Sensing': 'GIS Remote Sensing',
+  'Drone Survey': 'Drone Survey',
 }
 
 export default async function SurveyJobPrintPage({
@@ -135,7 +141,7 @@ export default async function SurveyJobPrintPage({
               </tr>
               {surveyFee > 0 && (
                 <tr className="border-b border-gray-100">
-                  <td className="py-2 text-gray-500">Survey Type Fee</td>
+                  <td className="py-2 text-gray-500">Contract Value</td>
                   <td className="py-2 font-semibold text-gray-900" colSpan={3}>{formatCurrency(surveyFee)}</td>
                 </tr>
               )}
@@ -219,12 +225,12 @@ export default async function SurveyJobPrintPage({
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {/* Survey Type Fee row */}
+                {/* Contract Value row */}
                 {surveyFee > 0 && (
                   <tr>
                     <td className="px-3 py-2 text-gray-500 whitespace-nowrap">{formatDate(job.quoted_amount_updated_at ?? job.start_date ?? job.created_at)}</td>
                     <td className="px-3 py-2 text-gray-600">Survey Fee</td>
-                    <td className="px-3 py-2 text-gray-900">Survey Type Fee ({job.survey_type})</td>
+                    <td className="px-3 py-2 text-gray-900">Contract Value ({job.survey_type})</td>
                     <td className="px-3 py-2 text-right font-medium text-gray-900">{formatCurrency(surveyFee)}</td>
                   </tr>
                 )}

@@ -12,7 +12,7 @@ const surveyJobSchema = z.object({
   client_id: z.string().min(1, 'Client is required'),
   site_name: z.string().min(1, 'Site name is required'),
   county: z.string().optional(),
-  survey_type: z.enum(['Topo', 'Cadastral', 'Control', 'Setting Out']),
+  survey_type: z.string().min(1, 'Survey type is required'),
   quoted_amount: z.coerce.number().min(0).default(0),
   start_date: z.string().optional(),
   end_date: z.string().optional(),
