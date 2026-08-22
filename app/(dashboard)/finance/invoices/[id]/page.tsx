@@ -48,7 +48,7 @@ export default async function InvoiceDetailPage({
 
   if (!doc) notFound()
 
-  const isAdmin = profile?.role === 'admin'
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'manager'
   const totalPaid = (payments ?? []).reduce((sum, p) => sum + p.amount, 0)
   const balanceDue = doc.total - totalPaid
 

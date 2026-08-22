@@ -100,7 +100,7 @@ export async function deleteSurveyJobAction(jobId: string): Promise<JobFormState
 
   const db = createServiceClient()
   const { data: profile } = await db.from('profiles').select('role').eq('id', user.id).single()
-  if (profile?.role !== 'admin') return { error: 'Only admins can delete jobs' }
+  if (profile?.role !== 'admin' && profile?.role !== 'manager') return { error: 'Only admins or managers can delete jobs' }
 
   const { error } = await db.from('survey_jobs').delete().eq('id', jobId)
   if (error) return { error: error.message }

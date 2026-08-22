@@ -76,7 +76,7 @@ const NAV: NavItem[] = [
     icon: Settings,
     children: [
       { label: 'My Account', href: '/settings/account' },
-      { label: 'Users', href: '/settings/users', roles: ['admin'] as UserRole[] },
+      { label: 'Users', href: '/settings/users', roles: ['admin', 'manager'] as UserRole[] },
     ],
   },
 ]

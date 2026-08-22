@@ -31,7 +31,7 @@ export default async function UsersPage() {
 
   const db = createServiceClient()
   const { data: myProfile } = await db.from('profiles').select('role').eq('id', user.id).single()
-  if (myProfile?.role !== 'admin') redirect('/dashboard')
+  if (myProfile?.role !== 'admin' && myProfile?.role !== 'manager') redirect('/dashboard')
 
   const [{ data: users }, { data: equipment }] = await Promise.all([
     db.from('profiles').select('*').order('full_name') as unknown as Promise<{ data: Profile[] | null }>,

@@ -22,7 +22,7 @@ async function requireAdmin() {
   if (!user) return null
   const db = createServiceClient()
   const { data: profile } = await db.from('profiles').select('role').eq('id', user.id).single()
-  if (profile?.role !== 'admin') return null
+  if (profile?.role !== 'admin' && profile?.role !== 'manager') return null
   return user
 }
 

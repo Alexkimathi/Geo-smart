@@ -45,7 +45,7 @@ export async function deleteJobNoteAction(
   const { data: profile } = await db.from('profiles').select('role').eq('id', user.id).single()
   const { data: note } = await db.from('job_notes').select('created_by').eq('id', noteId).single()
 
-  if (note?.created_by !== user.id && profile?.role !== 'admin') {
+  if (note?.created_by !== user.id && profile?.role !== 'admin' && profile?.role !== 'manager') {
     return { error: 'You can only delete your own notes' }
   }
 

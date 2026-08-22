@@ -28,7 +28,7 @@ export default async function LpoDetailPage({ params }: { params: Promise<{ id: 
 
   if (!lpo) notFound()
 
-  const isAdmin = profile?.role === 'admin'
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'manager'
 
   // Fetch linked job label if present
   let jobLabel: string | null = null

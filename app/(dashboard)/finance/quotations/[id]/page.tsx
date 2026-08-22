@@ -42,7 +42,7 @@ export default async function QuotationDetailPage({
 
   if (!doc) notFound()
 
-  const isAdmin = profile?.role === 'admin'
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'manager'
 
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto">

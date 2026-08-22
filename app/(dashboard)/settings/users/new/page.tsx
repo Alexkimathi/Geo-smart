@@ -12,7 +12,7 @@ export default async function NewUserPage() {
 
   const db = createServiceClient()
   const { data: profile } = await db.from('profiles').select('role').eq('id', user.id).single()
-  if (profile?.role !== 'admin') redirect('/dashboard')
+  if (profile?.role !== 'admin' && profile?.role !== 'manager') redirect('/dashboard')
 
   return (
     <div className="p-4 md:p-6 max-w-2xl mx-auto">

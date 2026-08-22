@@ -265,7 +265,7 @@ export async function deleteDocumentAction(id: string): Promise<FinanceFormState
 
   const db = createServiceClient()
   const { data: profile } = await db.from('profiles').select('role').eq('id', user.id).single()
-  if (profile?.role !== 'admin') return { error: 'Only admins can delete documents' }
+  if (profile?.role !== 'admin' && profile?.role !== 'manager') return { error: 'Only admins or managers can delete documents' }
 
   const { error } = await db.from('finance_documents').delete().eq('id', id)
   if (error) return { error: error.message }
@@ -526,7 +526,7 @@ export async function deleteLpoAction(id: string): Promise<FinanceFormState> {
 
   const db = createServiceClient()
   const { data: profile } = await db.from('profiles').select('role').eq('id', user.id).single()
-  if (profile?.role !== 'admin') return { error: 'Only admins can delete LPOs' }
+  if (profile?.role !== 'admin' && profile?.role !== 'manager') return { error: 'Only admins or managers can delete LPOs' }
 
   const { error } = await db.from('lpos').delete().eq('id', id)
   if (error) return { error: error.message }
@@ -680,7 +680,7 @@ export async function deleteExpenseAction(id: string): Promise<FinanceFormState>
   const { data: profile } = await db.from('profiles').select('role').eq('id', user.id).single()
   const { data: expense } = await db.from('expenses').select('recorded_by').eq('id', id).single()
 
-  if (profile?.role !== 'admin' && expense?.recorded_by !== user.id) {
+  if (profile?.role !== 'admin' && profile?.role !== 'manager' && expense?.recorded_by !== user.id) {
     return { error: 'You can only delete your own expenses' }
   }
 

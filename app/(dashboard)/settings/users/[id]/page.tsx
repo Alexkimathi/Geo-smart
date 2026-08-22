@@ -15,7 +15,7 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
 
   const db = createServiceClient()
   const { data: myProfile } = await db.from('profiles').select('role').eq('id', user.id).single()
-  if (myProfile?.role !== 'admin') redirect('/dashboard')
+  if (myProfile?.role !== 'admin' && myProfile?.role !== 'manager') redirect('/dashboard')
 
   const { data: profile } = await db
     .from('profiles')
