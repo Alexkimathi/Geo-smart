@@ -95,6 +95,11 @@ export async function deleteClientAction(id: string): Promise<ClientFormState> {
   if (!user) return { error: 'Not authenticated' }
 
   const db = createServiceClient()
+  const { data: profile } = await db.from('profiles').select('role').eq('id', user.id).single()
+  if (profile?.role !== 'admin' && profile?.role !== 'manager') {
+    return { error: 'Only admins or managers can delete clients' }
+  }
+
   const { error } = await db.from('clients').delete().eq('id', id)
   if (error) return { error: error.message }
 

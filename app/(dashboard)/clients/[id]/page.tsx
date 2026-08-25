@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { formatDate } from '@/lib/utils'
 import type { Client, SurveyJob, ConstructionJob } from '@/types/database'
 import { ClientEditButton } from './ClientEditButton'
+import { DeleteClientButton } from './DeleteClientButton'
 
 export default async function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -55,6 +56,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           >
             <FileText className="w-4 h-4" />Statement
           </Link>
+          <DeleteClientButton clientId={id} clientName={client.name} />
           <ClientEditButton client={client} />
         </div>
       </div>
