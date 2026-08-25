@@ -23,7 +23,7 @@ const lineItemSchema = z.object({
 
 const documentSchema = z.object({
   client_id: z.string().optional(),
-  job_type: z.enum(['survey', 'construction']).optional(),
+  job_type: z.preprocess(v => v === '' ? undefined : v, z.enum(['survey', 'construction']).optional()),
   job_id: z.string().optional(),
   due_date: z.string().optional(),
   tax: z.coerce.number().min(0).default(0),
@@ -43,7 +43,7 @@ const paymentSchema = z.object({
 })
 
 const expenseSchema = z.object({
-  job_type: z.enum(['survey', 'construction']).optional(),
+  job_type: z.preprocess(v => v === '' ? undefined : v, z.enum(['survey', 'construction']).optional()),
   job_id: z.string().optional(),
   category: z.enum(['Labour', 'Materials', 'Transport', 'Fuel', 'Equipment', 'Other']),
   description: z.string().min(1, 'Description is required'),
@@ -53,6 +53,71 @@ const expenseSchema = z.object({
 })
 
 // ─── Helpers ─────────────────────────────────────────────────
+// Inserts a finance_documents row, retrying with the next seq on a doc_no conflict.
+// The service client SELECT sees all rows correctly (bypasses RLS); DB-side functions do not.
+async function insertFinanceDoc(
+  db: ReturnType<typeof createServiceClient>,
+  type: FinanceDocType,
+  fields: {
+    client_id: string | null; job_type: string | null; job_id: string | null
+    due_date: string | null; tax: number; amount: number; total: number
+    line_items: unknown; notes: string | null; created_by: string
+  }
+): Promise<{ id: string } | { error: string }> {
+  const year = new Date().getFullYear()
+  const prefix = type === 'Invoice' ? `INV-${year}-` : `QT-${year}-`
+
+  const { data: maxRow } = await db
+    .from('finance_documents').select('doc_no').eq('type', type)
+    .like('doc_no', `${prefix}%`).order('doc_no', { ascending: false }).limit(1).maybeSingle()
+
+  let seq = (maxRow?.doc_no ? parseInt(maxRow.doc_no.split('-')[2], 10) : 0) + 1
+
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const docNo = `${prefix}${String(seq).padStart(3, '0')}`
+    const { data, error } = await db
+      .from('finance_documents')
+      .insert({ type, doc_no: docNo, ...fields, status: 'Draft' })
+      .select('id').single()
+    if (!error) return data as { id: string }
+    console.log(`[insertFinanceDoc] attempt ${attempt} docNo=${docNo} code=${error.code} details=${error.details}`)
+    if (error.code !== '23505') return { error: error.message }
+    seq++ // conflict → try next number
+  }
+  return { error: 'Could not generate a unique document number. Please try again.' }
+}
+
+// Same pattern for LPOs.
+async function insertLpo(
+  db: ReturnType<typeof createServiceClient>,
+  fields: {
+    supplier_name: string; job_type: string | null; job_id: string | null
+    items: unknown; subtotal: number; tax: number; total: number
+    issued_date: string | null; notes: string | null; created_by: string
+  }
+): Promise<{ id: string } | { error: string }> {
+  const year = new Date().getFullYear()
+  const prefix = `LPO-${year}-`
+
+  const { data: maxRow } = await db
+    .from('lpos').select('lpo_no')
+    .like('lpo_no', `${prefix}%`).order('lpo_no', { ascending: false }).limit(1).maybeSingle()
+
+  let seq = (maxRow?.lpo_no ? parseInt(maxRow.lpo_no.split('-')[2], 10) : 0) + 1
+
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const lpoNo = `${prefix}${String(seq).padStart(3, '0')}`
+    const { data, error } = await db
+      .from('lpos')
+      .insert({ lpo_no: lpoNo, ...fields, status: 'Draft' })
+      .select('id').single()
+    if (!error) return data as { id: string }
+    if (error.code !== '23505') return { error: error.message }
+    seq++
+  }
+  return { error: 'Could not generate a unique LPO number. Please try again.' }
+}
+
 function calcTotals(lineItems: unknown[], taxValue: number, taxType: 'percent' | 'amount' = 'percent') {
   const items = lineItems.map((i) => lineItemSchema.safeParse(i))
   const subtotal = items.reduce((sum, r) => sum + (r.success ? r.data.amount : 0), 0)
@@ -80,31 +145,21 @@ export async function createDocumentAction(
   const { amount, total } = calcTotals(line_items as unknown[], tax, tax_type)
 
   const db = createServiceClient()
-  const { data: doc, error } = await db
-    .from('finance_documents')
-    .insert({
-      type,
-      doc_no: '',          // trigger will set this
-      client_id: client_id || null,
-      job_type: job_type || null,
-      job_id: job_id || null,
-      due_date: due_date || null,
-      tax,
-      amount,
-      total,
-      line_items,
-      notes: notes || null,
-      status: 'Draft',
-      created_by: user.id,
-    })
-    .select('id')
-    .single()
-
-  if (error) return { error: error.message }
+  const result = await insertFinanceDoc(db, type, {
+    client_id: client_id || null,
+    job_type: job_type || null,
+    job_id: job_id || null,
+    due_date: due_date || null,
+    tax, amount, total,
+    line_items,
+    notes: notes || null,
+    created_by: user.id,
+  })
+  if ('error' in result) return { error: result.error }
 
   revalidatePath('/finance/quotations')
   revalidatePath('/finance/invoices')
-  return { success: true, docId: doc.id }
+  return { success: true, docId: result.id }
 }
 
 export async function updateDocumentAction(
@@ -224,38 +279,30 @@ export async function convertQuotationAction(quotationId: string): Promise<Finan
   if (quotation.converted_to) return { error: 'Already converted to an invoice' }
 
   // Create invoice from quotation
-  const { data: invoice, error: insertErr } = await db
-    .from('finance_documents')
-    .insert({
-      type: 'Invoice',
-      doc_no: '',
-      client_id: quotation.client_id,
-      job_type: quotation.job_type,
-      job_id: quotation.job_id,
-      due_date: quotation.due_date,
-      tax: quotation.tax,
-      amount: quotation.amount,
-      total: quotation.total,
-      line_items: quotation.line_items,
-      notes: quotation.notes,
-      status: 'Draft',
-      created_by: user.id,
-    })
-    .select('id')
-    .single()
-
-  if (insertErr) return { error: insertErr.message }
+  const invoiceResult = await insertFinanceDoc(db, 'Invoice', {
+    client_id: quotation.client_id,
+    job_type:  quotation.job_type,
+    job_id:    quotation.job_id,
+    due_date:  quotation.due_date,
+    tax:       quotation.tax,
+    amount:    quotation.amount,
+    total:     quotation.total,
+    line_items: quotation.line_items,
+    notes:     quotation.notes,
+    created_by: user.id,
+  })
+  if ('error' in invoiceResult) return { error: invoiceResult.error }
 
   // Mark quotation as converted
   await db
     .from('finance_documents')
-    .update({ converted_to: invoice.id, status: 'Sent' })
+    .update({ converted_to: invoiceResult.id, status: 'Sent' })
     .eq('id', quotationId)
 
   revalidatePath('/finance/quotations')
   revalidatePath('/finance/invoices')
   revalidatePath(`/finance/quotations/${quotationId}`)
-  return { success: true, docId: invoice.id }
+  return { success: true, docId: invoiceResult.id }
 }
 
 export async function deleteDocumentAction(id: string): Promise<FinanceFormState> {
@@ -421,7 +468,7 @@ const lpoLineItemSchema = z.object({
 
 const lpoSchema = z.object({
   supplier_name: z.string().min(1, 'Supplier name is required'),
-  job_type: z.enum(['survey', 'construction']).optional(),
+  job_type: z.preprocess(v => v === '' ? undefined : v, z.enum(['survey', 'construction']).optional()),
   job_id: z.string().optional(),
   issued_date: z.string().optional(),
   tax: z.coerce.number().min(0).max(100).default(0),
@@ -452,8 +499,7 @@ export async function createLpoAction(
   const { subtotal, total } = calcLpoTotals(items as unknown[], tax)
 
   const db = createServiceClient()
-  const { data: lpo, error } = await db.from('lpos').insert({
-    lpo_no: '',
+  const lpoResult = await insertLpo(db, {
     supplier_name,
     job_type: job_type || null,
     job_id: job_id || null,
@@ -463,14 +509,12 @@ export async function createLpoAction(
     total,
     issued_date: issued_date || null,
     notes: notes || null,
-    status: 'Draft',
     created_by: user.id,
-  }).select('id').single()
-
-  if (error) return { error: error.message }
+  })
+  if ('error' in lpoResult) return { error: lpoResult.error }
 
   revalidatePath('/finance/lpos')
-  return { success: true, docId: lpo.id }
+  return { success: true, docId: lpoResult.id }
 }
 
 export async function updateLpoAction(
@@ -579,30 +623,24 @@ export async function generateDocFromBoqAction(
 
   const subtotal = lineItems.reduce((s, i) => s + i.amount, 0)
 
-  const { data: doc, error: insertErr } = await db
-    .from('finance_documents')
-    .insert({
-      type: docType,
-      doc_no: '',
-      client_id: job.client_id,
-      job_type: jobType,
-      job_id: jobId,
-      tax: 0,
-      amount: subtotal,
-      total: subtotal,
-      line_items: lineItems,
-      status: 'Draft',
-      created_by: user.id,
-    })
-    .select('id')
-    .single()
-
-  if (insertErr) return { error: insertErr.message }
+  const boqResult = await insertFinanceDoc(db, docType, {
+    client_id: job.client_id,
+    job_type:  jobType,
+    job_id:    jobId,
+    due_date:  null,
+    tax:       0,
+    amount:    subtotal,
+    total:     subtotal,
+    line_items: lineItems,
+    notes:     null,
+    created_by: user.id,
+  })
+  if ('error' in boqResult) return { error: boqResult.error }
 
   revalidatePath(`/jobs/construction/${jobId}`)
   revalidatePath('/finance/invoices')
   revalidatePath('/finance/quotations')
-  return { success: true, docId: doc.id }
+  return { success: true, docId: boqResult.id }
 }
 
 // ─── BOQ Actions ──────────────────────────────────────────────
