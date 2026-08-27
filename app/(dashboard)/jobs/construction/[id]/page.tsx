@@ -113,8 +113,9 @@ export default async function ConstructionJobDetailPage({ params }: { params: Pr
   const totalExpenses = (expenses ?? []).reduce((s, e) => s + e.amount, 0)
   const totalLpos = (lpos ?? []).reduce((s, l) => s + l.total, 0)
   const totalCosts = totalExpenses + totalLpos
-  const netMargin = totalInvoiced - totalCosts
-  const marginPct = totalInvoiced > 0 ? (netMargin / totalInvoiced) * 100 : null
+  const contractValue = job?.contract_value ?? 0
+  const netMargin = contractValue - totalCosts
+  const marginPct = contractValue > 0 ? (netMargin / contractValue) * 100 : null
 
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto">

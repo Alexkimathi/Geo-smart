@@ -16,6 +16,7 @@ import {
   Building2,
   X,
   Settings,
+  MapPin,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
@@ -67,6 +68,18 @@ const NAV: NavItem[] = [
       { label: 'Expenses', href: '/finance/expenses' },
       { label: 'Payments', href: '/finance/payments' },
       { label: 'Reports', href: '/finance/reports' },
+    ],
+  },
+  {
+    label: 'Plots',
+    href: '/plots',
+    icon: MapPin,
+    children: [
+      { label: 'Projects', href: '/plots/projects' },
+      { label: 'All Plots', href: '/plots/plots' },
+      { label: 'Reservations', href: '/plots/reservations' },
+      { label: 'Buyers', href: '/plots/buyers' },
+      { label: 'Reports', href: '/plots/reports', roles: ['admin', 'manager'] as UserRole[] },
     ],
   },
   { label: 'Documents', href: '/documents', icon: FolderOpen },

@@ -147,7 +147,22 @@ export interface FinanceDocument {
   paid_date: string | null
   line_items: LineItem[]
   converted_to: string | null
+  quote_to: string | null
+  reference_no: string | null
   notes: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface BankAccount {
+  id: string
+  account_name: string
+  bank_name: string
+  branch: string | null
+  account_no: string
+  is_active: boolean
+  sort_order: number
   created_by: string | null
   created_at: string
   updated_at: string
@@ -273,4 +288,126 @@ export interface LpoLineItem {
 export type LpoWithJob = Lpo & {
   survey_jobs?: Pick<SurveyJob, 'job_no' | 'site_name'> | null
   construction_jobs?: Pick<ConstructionJob, 'job_no' | 'project_name'> | null
+}
+
+// ============================================================
+// PLOTS MODULE
+// ============================================================
+
+export type PlotStatus = 'available' | 'reserved' | 'sold' | 'transferred'
+export type ReservationStatus = 'pending_approval' | 'active' | 'completed' | 'defaulted' | 'cancelled'
+export type PlotPaymentMethod = 'M-Pesa' | 'Bank Transfer' | 'Cash' | 'Cheque'
+export type PlotPaymentType = 'reservation_fee' | 'installment' | 'lump_sum' | 'other'
+export type PaymentPlan = 'lump_sum' | 'installment'
+export type InstallmentFrequency = 'monthly' | 'quarterly'
+export type ProjectStatus = 'active' | 'completed'
+
+export interface PlotProject {
+  id: string
+  name: string
+  location: string
+  county: string
+  description: string | null
+  status: ProjectStatus
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface Plot {
+  id: string
+  project_id: string
+  plot_no: string
+  size_desc: string | null
+  area_sqm: number | null
+  price: number
+  gps_lat: number | null
+  gps_lng: number | null
+  title_status: string | null
+  status: PlotStatus
+  notes: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface PlotPhoto {
+  id: string
+  plot_id: string
+  url: string
+  caption: string | null
+  uploaded_by: string | null
+  created_at: string
+}
+
+export interface PlotBuyer {
+  id: string
+  full_name: string
+  phone: string
+  email: string | null
+  national_id: string | null
+  notes: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface PlotReservation {
+  id: string
+  plot_id: string
+  buyer_id: string
+  reserved_by: string | null
+  sale_price: number
+  reservation_fee: number
+  reservation_date: string
+  approved_at: string | null
+  approved_by: string | null
+  reservation_expires_at: string | null
+  payment_plan: PaymentPlan
+  installment_count: number | null
+  installment_amount: number | null
+  installment_frequency: InstallmentFrequency | null
+  mpesa_code: string | null
+  mpesa_name: string | null
+  status: ReservationStatus
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface PlotPayment {
+  id: string
+  reservation_id: string
+  amount: number
+  payment_date: string
+  method: PlotPaymentMethod
+  reference: string | null
+  mpesa_name: string | null
+  payment_type: PlotPaymentType
+  recorded_by: string | null
+  notes: string | null
+  created_at: string
+}
+
+export interface ReservationDocument {
+  id: string
+  reservation_id: string
+  document_type: string
+  url: string
+  file_name: string
+  uploaded_by: string | null
+  created_at: string
+}
+
+// Joined types
+export type PlotWithProject = Plot & {
+  plot_projects: Pick<PlotProject, 'id' | 'name' | 'location' | 'county'> | null
+}
+
+export type PlotReservationFull = PlotReservation & {
+  plots: Pick<Plot, 'id' | 'plot_no' | 'price' | 'size_desc' | 'status'> & {
+    plot_projects: Pick<PlotProject, 'id' | 'name' | 'location'> | null
+  } | null
+  plot_buyers: Pick<PlotBuyer, 'id' | 'full_name' | 'phone' | 'national_id'> | null
+  plot_payments: PlotPayment[]
 }

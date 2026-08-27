@@ -113,9 +113,9 @@ export default async function SurveyJobDetailPage({ params }: { params: Promise<
   const totalExpenses = (expenses ?? []).reduce((s, e) => s + e.amount, 0)
   const totalLpos = (lpos ?? []).reduce((s, l) => s + l.total, 0)
   const surveyFee = job?.quoted_amount ?? 0
-  const totalCosts = totalExpenses + totalLpos + surveyFee
-  const netMargin = totalInvoiced - totalCosts
-  const marginPct = totalInvoiced > 0 ? (netMargin / totalInvoiced) * 100 : null
+  const totalCosts = totalExpenses + totalLpos
+  const netMargin = surveyFee - totalCosts
+  const marginPct = surveyFee > 0 ? (netMargin / surveyFee) * 100 : null
 
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto">
