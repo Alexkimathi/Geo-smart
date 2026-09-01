@@ -132,6 +132,16 @@ export type TimesheetWithProfile = Timesheet & {
   profiles: Pick<Profile, 'full_name' | 'role'> | null
 }
 
+export interface QuoteBankDetails {
+  account_no: string | null
+  bank_name: string | null
+  branch: string | null
+  currency: string | null
+  swift_code: string | null
+  bank_code: string | null
+  branch_code: string | null
+}
+
 export interface FinanceDocument {
   id: string
   type: FinanceDocType
@@ -150,6 +160,7 @@ export interface FinanceDocument {
   quote_to: string | null
   reference_no: string | null
   notes: string | null
+  bank_details: QuoteBankDetails | null
   created_by: string | null
   created_at: string
   updated_at: string

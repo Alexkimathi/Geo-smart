@@ -29,6 +29,15 @@ const documentSchema = z.object({
   tax: z.coerce.number().min(0).default(0),
   tax_type: z.enum(['percent', 'amount']).default('percent'),
   notes: z.string().optional(),
+  quote_to: z.string().optional(),
+  reference_no: z.string().optional(),
+  bank_account_no: z.string().optional(),
+  bank_name: z.string().optional(),
+  bank_branch: z.string().optional(),
+  bank_currency: z.string().optional(),
+  bank_swift_code: z.string().optional(),
+  bank_code: z.string().optional(),
+  bank_branch_code: z.string().optional(),
   line_items: z.string().transform((v) => {
     try { return JSON.parse(v) } catch { return [] }
   }),
@@ -62,6 +71,7 @@ async function insertFinanceDoc(
     client_id: string | null; job_type: string | null; job_id: string | null
     due_date: string | null; tax: number; amount: number; total: number
     line_items: unknown; notes: string | null; created_by: string
+    quote_to?: string | null; reference_no?: string | null; bank_details?: unknown
   }
 ): Promise<{ id: string } | { error: string }> {
   const year = new Date().getFullYear()
@@ -141,8 +151,24 @@ export async function createDocumentAction(
   const parsed = documentSchema.safeParse(raw)
   if (!parsed.success) return { error: parsed.error.issues[0].message }
 
-  const { tax, tax_type, line_items, client_id, job_type, job_id, due_date, notes } = parsed.data
+  const {
+    tax, tax_type, line_items, client_id, job_type, job_id, due_date, notes,
+    quote_to, reference_no,
+    bank_account_no, bank_name, bank_branch, bank_currency,
+    bank_swift_code, bank_code, bank_branch_code,
+  } = parsed.data
   const { amount, total } = calcTotals(line_items as unknown[], tax, tax_type)
+
+  const hasBankDetails = bank_account_no || bank_name || bank_branch || bank_currency || bank_swift_code || bank_code || bank_branch_code
+  const bank_details = hasBankDetails ? {
+    account_no: bank_account_no || null,
+    bank_name: bank_name || null,
+    branch: bank_branch || null,
+    currency: bank_currency || null,
+    swift_code: bank_swift_code || null,
+    bank_code: bank_code || null,
+    branch_code: bank_branch_code || null,
+  } : null
 
   const db = createServiceClient()
   const result = await insertFinanceDoc(db, type, {
@@ -154,6 +180,9 @@ export async function createDocumentAction(
     line_items,
     notes: notes || null,
     created_by: user.id,
+    quote_to: quote_to || null,
+    reference_no: reference_no || null,
+    bank_details,
   })
   if ('error' in result) return { error: result.error }
 
@@ -175,8 +204,24 @@ export async function updateDocumentAction(
   const parsed = documentSchema.safeParse(raw)
   if (!parsed.success) return { error: parsed.error.issues[0].message }
 
-  const { tax, tax_type, line_items, client_id, job_type, job_id, due_date, notes } = parsed.data
+  const {
+    tax, tax_type, line_items, client_id, job_type, job_id, due_date, notes,
+    quote_to, reference_no,
+    bank_account_no, bank_name, bank_branch, bank_currency,
+    bank_swift_code, bank_code, bank_branch_code,
+  } = parsed.data
   const { amount, total } = calcTotals(line_items as unknown[], tax, tax_type)
+
+  const hasBankDetails = bank_account_no || bank_name || bank_branch || bank_currency || bank_swift_code || bank_code || bank_branch_code
+  const bank_details = hasBankDetails ? {
+    account_no: bank_account_no || null,
+    bank_name: bank_name || null,
+    branch: bank_branch || null,
+    currency: bank_currency || null,
+    swift_code: bank_swift_code || null,
+    bank_code: bank_code || null,
+    branch_code: bank_branch_code || null,
+  } : null
 
   const db = createServiceClient()
   const { error } = await db
@@ -191,6 +236,9 @@ export async function updateDocumentAction(
       total,
       line_items,
       notes: notes || null,
+      quote_to: quote_to || null,
+      reference_no: reference_no || null,
+      bank_details,
     })
     .eq('id', id)
 
