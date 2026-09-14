@@ -27,7 +27,7 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
-          PGSSLMODE=require pg_dump "$DATABASE_URL" \
+          PGSSLMODE=require /usr/lib/postgresql/17/bin/pg_dump "$DATABASE_URL" \
             --clean --no-acl --no-owner \
             | gzip > backup-${{ env.DATE }}.sql.gz
 
