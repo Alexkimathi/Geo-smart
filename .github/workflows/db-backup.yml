@@ -24,7 +24,16 @@ jobs:
         run: |
           pg_dump "$DATABASE_URL" \
             --clean --no-acl --no-owner \
+            -v \
             | gzip > backup-${{ env.DATE }}.sql.gz
+
+          # Fail if backup is empty (less than 100 bytes)
+          SIZE=$(wc -c < backup-${{ env.DATE }}.sql.gz)
+          echo "Backup size: $SIZE bytes"
+          if [ "$SIZE" -lt 100 ]; then
+            echo "ERROR: Backup file is empty — pg_dump likely failed"
+            exit 1
+          fi
 
       - name: Upload backup to GitHub Release
         uses: softprops/action-gh-release@v2
