@@ -1,0 +1,35 @@
+name: Database Backup
+
+on:
+  schedule:
+    - cron: '0 2 * * 0'  # Every Sunday at 2am UTC
+  workflow_dispatch:       # Allow manual trigger from GitHub Actions tab
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write      # Needed to create GitHub Releases
+
+    steps:
+      - name: Set backup date
+        run: echo "DATE=$(date +%Y-%m-%d)" >> $GITHUB_ENV
+
+      - name: Install PostgreSQL client
+        run: sudo apt-get install -y postgresql-client
+
+      - name: Create database dump
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          pg_dump "$DATABASE_URL" \
+            --clean --no-acl --no-owner \
+            | gzip > backup-${{ env.DATE }}.sql.gz
+
+      - name: Upload backup to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: backup-${{ env.DATE }}
+          name: "DB Backup ${{ env.DATE }}"
+          body: "Automated weekly database backup."
+          files: backup-${{ env.DATE }}.sql.gz
