@@ -25,9 +25,12 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
-          pg_dump "$DATABASE_URL" \
+          # Resolve hostname to IPv4 to avoid IPv6 issues on GitHub runners
+          IPV4=$(dig +short A db.rbqlfwqhqbypheyxeluf.supabase.co | grep -E '^[0-9]+\.' | head -1)
+          echo "Resolved to IPv4: $IPV4"
+
+          PGHOSTADDR=$IPV4 PGSSLMODE=require pg_dump "$DATABASE_URL" \
             --clean --no-acl --no-owner \
-            -v \
             | gzip > backup-${{ env.DATE }}.sql.gz
 
           # Fail if backup is empty (less than 100 bytes)
