@@ -15,9 +15,6 @@ jobs:
       - name: Set backup date
         run: echo "DATE=$(date +%Y-%m-%d)" >> $GITHUB_ENV
 
-      - name: Disable IPv6 (GitHub runners lack IPv6 connectivity)
-        run: sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1
-
       - name: Install PostgreSQL client
         run: sudo apt-get install -y postgresql-client
 
@@ -25,11 +22,7 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
-          # Resolve hostname to IPv4 to avoid IPv6 issues on GitHub runners
-          IPV4=$(dig +short A db.rbqlfwqhqbypheyxeluf.supabase.co | grep -E '^[0-9]+\.' | head -1)
-          echo "Resolved to IPv4: $IPV4"
-
-          PGHOSTADDR=$IPV4 PGSSLMODE=require pg_dump "$DATABASE_URL" \
+          PGSSLMODE=require pg_dump "$DATABASE_URL" \
             --clean --no-acl --no-owner \
             | gzip > backup-${{ env.DATE }}.sql.gz
 
