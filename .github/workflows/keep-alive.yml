@@ -1,0 +1,21 @@
+name: Keep Supabase Alive
+
+on:
+  schedule:
+    - cron: '0 2 */5 * *'  # Every 5 days at 2am UTC
+  workflow_dispatch:         # Allow manual trigger
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Ping Supabase to prevent project pausing
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://rbqlfwqhqbypheyxeluf.supabase.co/rest/v1/)
+          echo "Supabase ping status: $STATUS"
+          if [ "$STATUS" -eq 0 ]; then
+            echo "ERROR: No response from Supabase"
+            exit 1
+          fi
+          echo "Supabase is awake."
