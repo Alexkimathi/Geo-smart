@@ -9,6 +9,7 @@ import { formatDate, formatCurrency } from '@/lib/utils'
 import { ConvertQuotationButton } from './ConvertQuotationButton'
 import { StatusActionButton } from '../../StatusActionButton'
 import { DeleteDocumentButton } from '@/components/finance/DeleteDocumentButton'
+import { DownloadExcelButton } from '@/components/finance/DownloadExcelButton'
 import type { FinanceDocumentWithClient } from '@/types/database'
 
 const STATUS_COLORS: Record<string, 'gray' | 'blue' | 'yellow' | 'green' | 'red'> = {
@@ -87,6 +88,7 @@ export default async function QuotationDetailPage({
               <Printer className="w-4 h-4" />Print / PDF
             </Button>
           </Link>
+          <DownloadExcelButton doc={doc} />
           {isAdmin && (
             <DeleteDocumentButton docId={id} docNo={doc.doc_no} redirectTo="/finance/quotations" />
           )}

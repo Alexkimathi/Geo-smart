@@ -42,27 +42,26 @@ export default async function QuotationPrintPage({
           <div className="p-8 pb-6">
 
             {/* ── Company Header ──────────────────────────────────── */}
-            <div className="flex items-start gap-5 mb-4">
+            <div className="flex items-center gap-4 mb-3">
               {/* Logo */}
-              <div
-                className="shrink-0 flex items-center justify-center rounded-full text-white font-black text-center leading-tight"
-                style={{ width: 84, height: 84, backgroundColor: '#7B1818', flexShrink: 0 }}
-              >
-                <span style={{ fontSize: 8.5, letterSpacing: '0.04em', textTransform: 'uppercase', padding: '0 6px' }}>
-                  GEREC<br />SURVEY &amp;<br />ENG.
-                </span>
-              </div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/logo.png"
+                alt="GEREC Logo"
+                style={{ width: 90, height: 90, objectFit: 'contain', flexShrink: 0 }}
+              />
 
               {/* Company info */}
               <div className="flex-1">
-                <h1 className="text-sm font-extrabold text-gray-900 leading-tight uppercase tracking-wide">
+                <h1 className="font-extrabold leading-tight uppercase" style={{ fontSize: 15, color: '#B91C1C', letterSpacing: '0.02em' }}>
                   GEO-SMART ENGINEERING &amp; REAL ESTATE CONTRACTORS LIMITED
                 </h1>
-                <p className="text-xs text-gray-500 mt-1">
-                  Real Estate Agency &nbsp;|&nbsp; Project Management &nbsp;|&nbsp; General Construction
-                </p>
-                <p className="text-xs text-gray-500 mt-0.5">P.O BOX 307-00600, NAIROBI</p>
-                <p className="text-xs text-gray-500">Email: geosmart2016@gmail.com</p>
+                <div style={{ borderTop: '2px solid #1E3A8A', borderBottom: '2px solid #1E3A8A', padding: '3px 0', margin: '4px 0' }}>
+                  <p className="text-xs italic" style={{ color: '#1E3A8A' }}>
+                    Deals In: Spatial Research Consultants, Planning, Valuation, Cadastral Survey, Topographical Survey, Engineering Survey, Tilting Survey, Survey Research, Property Management, Real Estate Agency, Project Management, General Construction Contractors
+                  </p>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">P.O BOX 307-00600, NAIROBI &nbsp;&nbsp; Tel: +254 722 123 456 &nbsp;&nbsp; Email: geosmart2016@gmail.com</p>
               </div>
 
               {/* Document type */}
@@ -74,7 +73,7 @@ export default async function QuotationPrintPage({
               </div>
             </div>
 
-            <hr className="border-gray-300 mb-4" />
+            <div style={{ borderBottom: '3px solid #B91C1C', marginBottom: 16 }} />
 
             {/* ── Quoted To + Date info ───────────────────────────── */}
             <div className="mb-4">

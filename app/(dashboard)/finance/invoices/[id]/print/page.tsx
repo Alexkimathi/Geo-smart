@@ -33,26 +33,28 @@ export default async function InvoicePrintPage({
           <div className="p-8 pb-6">
 
             {/* ── Company Header ──────────────────────────────────── */}
-            <div className="flex items-start gap-5 mb-5">
-              {/* Logo — replace this div with <img src="/logo.png"> once you have the file */}
-              <div
-                className="shrink-0 flex items-center justify-center rounded-full text-white font-black text-xs text-center leading-tight"
-                style={{ width: 80, height: 80, backgroundColor: '#7B1818', flexShrink: 0 }}
-              >
-                <span style={{ fontSize: 9, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-                  GEREC<br />SURVEY &amp;<br />ENG.
-                </span>
-              </div>
+            <div className="flex items-center gap-4 mb-3">
+              {/* Logo */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/logo.png"
+                alt="GEREC Logo"
+                style={{ width: 90, height: 90, objectFit: 'contain', flexShrink: 0 }}
+              />
+
               {/* Company info */}
               <div className="flex-1">
-                <h1 className="text-base font-extrabold text-gray-900 leading-tight uppercase tracking-wide">
-                  Geo-Smart Engineering &amp; Real Estate Contractors Ltd
+                <h1 className="font-extrabold leading-tight uppercase" style={{ fontSize: 15, color: '#B91C1C', letterSpacing: '0.02em' }}>
+                  GEO-SMART ENGINEERING &amp; REAL ESTATE CONTRACTORS LIMITED
                 </h1>
-                <p className="text-xs text-gray-500 mt-1">
-                  Real Estate Agency &nbsp;|&nbsp; Project Management &nbsp;|&nbsp; General Construction
-                </p>
-                <p className="text-xs text-gray-400 mt-0.5">P.O Box Nairobi, Kenya</p>
+                <div style={{ borderTop: '2px solid #1E3A8A', borderBottom: '2px solid #1E3A8A', padding: '3px 0', margin: '4px 0' }}>
+                  <p className="text-xs italic" style={{ color: '#1E3A8A' }}>
+                    Deals In: Spatial Research Consultants, Planning, Valuation, Cadastral Survey, Topographical Survey, Engineering Survey, Tilting Survey, Survey Research, Property Management, Real Estate Agency, Project Management, General Construction Contractors
+                  </p>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">P.O BOX 307-00600, NAIROBI &nbsp;&nbsp; Tel: +254 722 123 456 &nbsp;&nbsp; Email: geosmart2016@gmail.com</p>
               </div>
+
               {/* Document type */}
               <div className="text-right shrink-0">
                 <h2 className="text-3xl font-extrabold uppercase" style={{ color: '#B91C1C' }}>
@@ -62,7 +64,7 @@ export default async function InvoicePrintPage({
               </div>
             </div>
 
-            <hr className="border-gray-300 mb-5" />
+            <div style={{ borderBottom: '3px solid #B91C1C', marginBottom: 20 }} />
 
             {/* ── Bill To + Date info ─────────────────────────────── */}
             <div className="mb-5">

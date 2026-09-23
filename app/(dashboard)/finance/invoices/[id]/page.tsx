@@ -10,6 +10,7 @@ import { StatusActionButton } from '../../StatusActionButton'
 import { RecordPaymentForm } from '@/components/finance/RecordPaymentForm'
 import { DeleteDocumentButton } from '@/components/finance/DeleteDocumentButton'
 import { PaymentRow } from '@/components/finance/PaymentRow'
+import { DownloadExcelButton } from '@/components/finance/DownloadExcelButton'
 import type { FinanceDocumentWithClient, Payment } from '@/types/database'
 
 const STATUS_COLORS: Record<string, 'gray' | 'blue' | 'yellow' | 'green' | 'red'> = {
@@ -94,6 +95,7 @@ export default async function InvoiceDetailPage({
               <FileCheck className="w-4 h-4" />Print Receipt
             </Button>
           </Link>
+          <DownloadExcelButton doc={doc} payments={payments ?? []} />
           {isAdmin && (
             <DeleteDocumentButton docId={id} docNo={doc.doc_no} redirectTo="/finance/invoices" />
           )}
