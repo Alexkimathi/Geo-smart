@@ -101,14 +101,14 @@ export default async function EtimssPrintPage({
     : 0
 
   return (
-    <div style={{ minHeight: '100vh', background: '#e5e5e5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: '#e5e5e5', fontFamily: '"Times New Roman", Times, serif' }}>
 
       {/* ── Print controls ─────────────────────────────────── */}
       <div className="no-print" style={{
         display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 12,
         padding: '10px 16px', background: 'white', borderBottom: '1px solid #ccc',
       }}>
-        <span style={{ fontSize: 13, color: '#555', fontFamily: 'monospace' }}>{doc.invoice_no}</span>
+        <span style={{ fontSize: 13, color: '#555', fontFamily: '"Times New Roman", Times, serif' }}>{doc.invoice_no}</span>
         <PrintButton />
       </div>
 
