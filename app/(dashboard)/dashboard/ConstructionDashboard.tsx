@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { HardHat, TrendingUp, BarChart2, DollarSign, Calendar, Package } from 'lucide-react'
+import { DashboardGreeting } from '@/components/dashboard/DashboardGreeting'
 import Link from 'next/link'
 import type { ConstructionJob, Expense, Client, Equipment } from '@/types/database'
 
@@ -36,10 +37,7 @@ const STATUS_BADGE: Record<string, 'blue' | 'yellow' | 'purple' | 'green' | 'gra
   'On Hold': 'gray',
 }
 
-function greeting() {
-  const h = new Date().getHours()
-  return h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening'
-}
+
 
 export async function ConstructionDashboard({ name, userId }: { name: string; userId: string }) {
   const db = createServiceClient()
@@ -99,7 +97,7 @@ export async function ConstructionDashboard({ name, userId }: { name: string; us
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Good {greeting()}, {name}</h1>
+        <DashboardGreeting name={name} />
         <p className="text-sm text-gray-500 mt-1">
           Construction Dashboard — {new Date().toLocaleDateString('en-KE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
         </p>

@@ -11,10 +11,6 @@ type SurveyRow = Pick<SurveyJob, 'id' | 'job_no' | 'site_name' | 'status'> & { c
 type ConsRow = Pick<ConstructionJob, 'id' | 'job_no' | 'project_name' | 'status' | 'progress_pct'> & { clients: Pick<Client, 'name'> | null }
 type InvRow = Pick<FinanceDocument, 'id' | 'doc_no' | 'total' | 'status' | 'due_date'> & { clients: Pick<Client, 'name'> | null }
 
-function greeting() {
-  const h = new Date().getHours()
-  return h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening'
-}
 
 function StatusBar({ label, count, total }: { label: string; count: number; total: number }) {
   const pct = total > 0 ? Math.round((count / total) * 100) : 0
