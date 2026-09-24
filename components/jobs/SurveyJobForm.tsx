@@ -23,6 +23,7 @@ const KNOWN_SURVEY_TYPES = [
   'Topo', 'Cadastral', 'Control', 'Setting Out',
   'Transfer of Titles', 'Sectional Survey', 'Engineering Survey',
   'Professional Survey Consultation', 'GIS Remote Sensing', 'Drone Survey',
+  'Valuation Services',
 ]
 
 export function SurveyJobForm({ clients, job, defaultClientId, action, onSuccess }: Props) {
@@ -118,6 +119,7 @@ export function SurveyJobForm({ clients, job, defaultClientId, action, onSuccess
             <option value="Professional Survey Consultation">Professional Survey Consultation</option>
             <option value="GIS Remote Sensing">GIS Remote Sensing</option>
             <option value="Drone Survey">Drone Survey</option>
+            <option value="Valuation Services">Valuation Services</option>
             <option value="Other">Other...</option>
           </NativeSelect>
           {surveyTypeSelect === 'Other' && (

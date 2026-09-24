@@ -68,6 +68,7 @@ const NAV: NavItem[] = [
       { label: 'Expenses', href: '/finance/expenses' },
       { label: 'Payments', href: '/finance/payments' },
       { label: 'Reports', href: '/finance/reports' },
+      { label: 'eTIMS', href: '/finance/etims', roles: ['admin', 'manager', 'accountant'] as UserRole[] },
     ],
   },
   {

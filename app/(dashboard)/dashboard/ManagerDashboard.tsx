@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { Briefcase, TrendingUp, DollarSign, AlertTriangle, FileText } from 'lucide-react'
+import { DashboardGreeting } from '@/components/dashboard/DashboardGreeting'
 import Link from 'next/link'
 import type { SurveyJob, ConstructionJob, FinanceDocument, Payment, Client } from '@/types/database'
 
@@ -88,7 +89,7 @@ export async function ManagerDashboard({ name }: { name: string }) {
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Good {greeting()}, {name}</h1>
+        <DashboardGreeting name={name} />
         <p className="text-sm text-gray-500 mt-1">
           {new Date().toLocaleDateString('en-KE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
         </p>

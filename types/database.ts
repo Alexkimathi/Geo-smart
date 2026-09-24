@@ -410,6 +410,45 @@ export interface ReservationDocument {
   created_at: string
 }
 
+// ============================================================
+// ETIMS MODULE
+// ============================================================
+
+export type EtimsRate = 'NV' | '16%' | '0%' | 'Ex.'
+export type EtimsStatus = 'Draft' | 'Final'
+
+export interface EtimsLineItem {
+  item_code: string
+  description: string
+  qty: number
+  unit_price: number
+  rate: EtimsRate
+  amt_excl_tax: number
+  tax_amt: number
+  amt_incl_tax: number
+}
+
+export interface EtimsDocument {
+  id: string
+  invoice_no: string
+  invoice_date: string
+  seller_pin: string
+  seller_name: string
+  client_id: string | null
+  buyer_pin: string
+  buyer_name: string
+  line_items: EtimsLineItem[]
+  scu_id: string | null
+  cu_invoice_no: string | null
+  internal_data: string | null
+  receipt_signature: string | null
+  qr_code_data: string | null
+  status: EtimsStatus
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
 // Joined types
 export type PlotWithProject = Plot & {
   plot_projects: Pick<PlotProject, 'id' | 'name' | 'location' | 'county'> | null
