@@ -222,13 +222,13 @@ export default async function EtimssPrintPage({
                   <div style={{ fontWeight: 700, fontSize: 11, marginBottom: 4 }}>SCU INFORMATION</div>
 
                   {/* Top dashes — clipped cleanly by the td boundary */}
-                  <div style={{ overflow: 'hidden', whiteSpace: 'nowrap', fontFamily: "'Courier New', Courier, monospace", fontSize: 10, marginBottom: 5 }}>
+                  <div style={{ overflow: 'hidden', whiteSpace: 'nowrap', fontSize: 10, marginBottom: 5 }}>
                     {'-'.repeat(60)}
                   </div>
 
                   {/* SCU text + QR side by side */}
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                    <div style={{ flex: 1, minWidth: 0, fontFamily: "'Courier New', Courier, monospace", fontSize: 10, lineHeight: 1.9 }}>
+                    <div style={{ flex: 1, minWidth: 0, fontSize: 10, lineHeight: 1.6 }}>
                       <div>Date : {dtStr}</div>
                       {doc.scu_id && <div>SCU ID : {doc.scu_id}</div>}
                       {doc.cu_invoice_no && (
@@ -262,11 +262,11 @@ export default async function EtimssPrintPage({
                   </div>
 
                   {/* Bottom dashes */}
-                  <div style={{ overflow: 'hidden', whiteSpace: 'nowrap', fontFamily: "'Courier New', Courier, monospace", fontSize: 10, marginTop: 5, marginBottom: 4 }}>
+                  <div style={{ overflow: 'hidden', whiteSpace: 'nowrap', fontSize: 10, marginTop: 5, marginBottom: 4 }}>
                     {'-'.repeat(60)}
                   </div>
 
-                  <div style={{ fontSize: 10, fontStyle: 'italic' }}>Powered by eTIMS</div>
+                  <div style={{ fontSize: 10 }}>Powered by eTIMS</div>
                 </td>
 
                 {/* ── TAX SUMMARY ──────────────────────────── */}
