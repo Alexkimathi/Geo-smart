@@ -212,26 +212,23 @@ export default async function EtimssPrintPage({
 
           {/* ════════════════════════════════════════════════
               BOTTOM: SCU INFORMATION (left) + TAX SUMMARY (right)
-              Use a table so columns never overflow the paper.
           ════════════════════════════════════════════════ */}
           <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 14 }}>
             <tbody>
               <tr style={{ verticalAlign: 'top' }}>
 
                 {/* ── SCU INFORMATION ──────────────────────── */}
-                <td style={{ width: '54%', paddingRight: 20 }}>
-                  <div style={{ fontWeight: 700, fontSize: 11, marginBottom: 5 }}>SCU INFORMATION</div>
+                <td style={{ width: '52%', paddingRight: 16 }}>
+                  <div style={{ fontWeight: 700, fontSize: 11, marginBottom: 4 }}>SCU INFORMATION</div>
 
-                  {/* Top separator */}
-                  <div style={{ borderTop: '1px solid #444', marginBottom: 5 }} />
+                  {/* Top dashes — clipped cleanly by the td boundary */}
+                  <div style={{ overflow: 'hidden', whiteSpace: 'nowrap', fontFamily: "'Courier New', Courier, monospace", fontSize: 10, marginBottom: 5 }}>
+                    {'-'.repeat(60)}
+                  </div>
 
                   {/* SCU text + QR side by side */}
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                    <div style={{
-                      flex: 1, minWidth: 0,
-                      fontFamily: "'Courier New', Courier, monospace",
-                      fontSize: 10, lineHeight: 1.9,
-                    }}>
+                    <div style={{ flex: 1, minWidth: 0, fontFamily: "'Courier New', Courier, monospace", fontSize: 10, lineHeight: 1.9 }}>
                       <div>Date : {dtStr}</div>
                       {doc.scu_id && <div>SCU ID : {doc.scu_id}</div>}
                       {doc.cu_invoice_no && (
@@ -259,26 +256,29 @@ export default async function EtimssPrintPage({
 
                     {doc.qr_code_data && (
                       <div style={{ flexShrink: 0 }}>
-                        <EtimsQrCode value={doc.qr_code_data} size={110} />
+                        <EtimsQrCode value={doc.qr_code_data} size={100} />
                       </div>
                     )}
                   </div>
 
-                  {/* Bottom separator */}
-                  <div style={{ borderTop: '1px solid #444', marginTop: 6, marginBottom: 4 }} />
+                  {/* Bottom dashes */}
+                  <div style={{ overflow: 'hidden', whiteSpace: 'nowrap', fontFamily: "'Courier New', Courier, monospace", fontSize: 10, marginTop: 5, marginBottom: 4 }}>
+                    {'-'.repeat(60)}
+                  </div>
+
                   <div style={{ fontSize: 10, fontStyle: 'italic' }}>Powered by eTIMS</div>
                 </td>
 
                 {/* ── TAX SUMMARY ──────────────────────────── */}
-                <td style={{ width: '46%' }}>
+                <td style={{ width: '48%' }}>
                   <div style={{ fontWeight: 700, fontSize: 11, marginBottom: 6 }}>TAX SUMMARY</div>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10.5 }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10 }}>
                     <thead>
                       <tr>
-                        <th style={{ border: '1px solid #000', padding: '5px 7px', textAlign: 'left',  fontWeight: 700 }}>Tax Rate</th>
-                        <th style={{ border: '1px solid #000', padding: '5px 7px', textAlign: 'right', fontWeight: 700 }}>Taxable Amt</th>
-                        <th style={{ border: '1px solid #000', padding: '5px 7px', textAlign: 'right', fontWeight: 700 }}>Tax Amt</th>
-                        <th style={{ border: '1px solid #000', padding: '5px 7px', textAlign: 'right', fontWeight: 700 }}>Total Amt</th>
+                        <th style={{ border: '1px solid #000', padding: '4px 5px', textAlign: 'left',  fontWeight: 700 }}>Tax Rate</th>
+                        <th style={{ border: '1px solid #000', padding: '4px 5px', textAlign: 'right', fontWeight: 700 }}>Taxable Amt</th>
+                        <th style={{ border: '1px solid #000', padding: '4px 5px', textAlign: 'right', fontWeight: 700 }}>Tax Amt</th>
+                        <th style={{ border: '1px solid #000', padding: '4px 5px', textAlign: 'right', fontWeight: 700 }}>Total Amt</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -286,18 +286,18 @@ export default async function EtimssPrintPage({
                         const g = taxRows[rate]!
                         return (
                           <tr key={rate}>
-                            <td style={{ border: '1px solid #000', padding: '5px 7px' }}>{rate}</td>
-                            <td style={{ border: '1px solid #000', padding: '5px 7px', textAlign: 'right' }}>{fmtKsh(g.taxable)}</td>
-                            <td style={{ border: '1px solid #000', padding: '5px 7px', textAlign: 'right' }}>{fmtKsh(g.tax)}</td>
-                            <td style={{ border: '1px solid #000', padding: '5px 7px', textAlign: 'right' }}>{fmtKsh(g.total)}</td>
+                            <td style={{ border: '1px solid #000', padding: '4px 5px' }}>{rate}</td>
+                            <td style={{ border: '1px solid #000', padding: '4px 5px', textAlign: 'right' }}>{fmtKsh(g.taxable)}</td>
+                            <td style={{ border: '1px solid #000', padding: '4px 5px', textAlign: 'right' }}>{fmtKsh(g.tax)}</td>
+                            <td style={{ border: '1px solid #000', padding: '4px 5px', textAlign: 'right' }}>{fmtKsh(g.total)}</td>
                           </tr>
                         )
                       })}
                       <tr>
-                        <td style={{ border: '1px solid #000', padding: '5px 7px', fontWeight: 700 }}>Totals</td>
-                        <td style={{ border: '1px solid #000', padding: '5px 7px', textAlign: 'right', fontWeight: 700 }}>{fmtKsh(grand.taxable)}</td>
-                        <td style={{ border: '1px solid #000', padding: '5px 7px', textAlign: 'right', fontWeight: 700 }}>{fmtKsh(grand.tax)}</td>
-                        <td style={{ border: '1px solid #000', padding: '5px 7px', textAlign: 'right', fontWeight: 700 }}>{fmtKsh(grand.total)}</td>
+                        <td style={{ border: '1px solid #000', padding: '4px 5px', fontWeight: 700 }}>Totals</td>
+                        <td style={{ border: '1px solid #000', padding: '4px 5px', textAlign: 'right', fontWeight: 700 }}>{fmtKsh(grand.taxable)}</td>
+                        <td style={{ border: '1px solid #000', padding: '4px 5px', textAlign: 'right', fontWeight: 700 }}>{fmtKsh(grand.tax)}</td>
+                        <td style={{ border: '1px solid #000', padding: '4px 5px', textAlign: 'right', fontWeight: 700 }}>{fmtKsh(grand.total)}</td>
                       </tr>
                     </tbody>
                   </table>
