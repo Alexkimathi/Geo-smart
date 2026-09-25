@@ -95,13 +95,9 @@ export default async function EtimssPrintPage({
 
   const { rows: taxRows, grand } = calcTax(doc.line_items)
   const dtStr = formatEtimsDatetime(doc.invoice_date)
-  // Height of empty area below items (no horizontal lines — only column dividers)
-  const emptyAreaHeight = doc.line_items.length < 10
-    ? (10 - doc.line_items.length) * 26
-    : 0
 
   return (
-    <div style={{ minHeight: '100vh', background: '#e5e5e5', fontFamily: '"Times New Roman", Times, serif' }}>
+    <div className="print-outer" style={{ minHeight: '100vh', background: '#e5e5e5', fontFamily: '"Times New Roman", Times, serif' }}>
 
       {/* ── Print controls ─────────────────────────────────── */}
       <div className="no-print" style={{
@@ -113,8 +109,8 @@ export default async function EtimssPrintPage({
       </div>
 
       {/* ── Paper ──────────────────────────────────────────── */}
-      <div style={{ maxWidth: 794, margin: '24px auto 40px', padding: '0 0' }}>
-        <div style={{ background: 'white', padding: '32px 36px 36px', boxShadow: '0 2px 12px rgba(0,0,0,0.15)' }}>
+      <div className="print-wrapper" style={{ maxWidth: 794, margin: '24px auto 40px', padding: '0 0' }}>
+        <div className="print-card" style={{ background: 'white', padding: '32px 36px 36px', boxShadow: '0 2px 12px rgba(0,0,0,0.15)', height: '281mm', display: 'flex', flexDirection: 'column' }}>
 
           {/* ════════════════════════════════════════════════
               eTIMS LOGO
@@ -169,8 +165,8 @@ export default async function EtimssPrintPage({
               Cells only carry: borderLeft (column separators) + TH borderBottom (header rule).
               No top/bottom on body cells → zero horizontal lines in the body.
           ════════════════════════════════════════════════ */}
-          <div style={{ border: '1px solid #000' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <div style={{ border: '1px solid #000', flex: 1 }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', height: '100%' }}>
               <thead>
                 <tr>
                   <TH first>Item Code</TH>
@@ -194,18 +190,15 @@ export default async function EtimssPrintPage({
                     <TD align="right">{fmtNum(item.amt_incl_tax)}</TD>
                   </tr>
                 ))}
-                {/* Empty area: column separators only — no top/bottom borders = no horizontal lines */}
-                {emptyAreaHeight > 0 && (
-                  <tr>
-                    {[0,1,2,3,4,5,6].map((c) => (
-                      <td key={c} style={{
-                        borderLeft: c === 0 ? 'none' : '1px solid #000',
-                        height: emptyAreaHeight,
-                        padding: 0,
-                      }} />
-                    ))}
-                  </tr>
-                )}
+                {/* Spacer row — fills remaining table height, column separators only */}
+                <tr style={{ height: '100%' }}>
+                  {[0,1,2,3,4,5,6].map((c) => (
+                    <td key={c} style={{
+                      borderLeft: c === 0 ? 'none' : '1px solid #000',
+                      padding: 0,
+                    }} />
+                  ))}
+                </tr>
               </tbody>
             </table>
           </div>
@@ -312,9 +305,23 @@ export default async function EtimssPrintPage({
 
       <style>{`
         @page { size: A4; margin: 8mm; }
+        header { display: none !important; }
+        aside { display: none !important; }
         @media print {
+          /* Isolate: hide everything, then reveal only our content */
+          body, body * { visibility: hidden; }
+          .print-outer {
+            visibility: visible;
+            position: fixed;
+            inset: 0;
+            background: white !important;
+          }
+          .print-outer * { visibility: visible; }
+          /* Keep print controls hidden */
           .no-print { display: none !important; }
-          body { margin: 0; background: white !important; }
+          /* Clean up screen-only chrome */
+          .print-wrapper { margin: 0 !important; padding: 0 !important; max-width: 100% !important; }
+          .print-card { box-shadow: none !important; }
           * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         }
       `}</style>
