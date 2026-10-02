@@ -61,7 +61,7 @@ export default async function QuotationPrintPage({
                     Deals In: Spatial Research Consultants, Planning, Valuation, Cadastral Survey, Topographical Survey, Engineering Survey, Tilting Survey, Survey Research, Property Management, Real Estate Agency, Project Management, General Construction Contractors
                   </p>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">P.O BOX 307-00600, NAIROBI &nbsp;&nbsp; Tel: +254 722 123 456 &nbsp;&nbsp; Email: geosmart2016@gmail.com</p>
+                <p className="text-xs text-gray-500 mt-1">P.O BOX 307-00600, NAIROBI &nbsp;&nbsp; Tel: 0722253299 &nbsp;&nbsp; Email: geosmart2016@gmail.com</p>
               </div>
 
               {/* Document type */}

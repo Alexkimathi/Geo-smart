@@ -14,6 +14,7 @@ interface Props {
   initialTax?: number
   initialTaxType?: TaxType
   hideUnit?: boolean
+  allowNegative?: boolean
 }
 
 const emptyRow = (): LineItem => ({
@@ -24,7 +25,7 @@ const emptyRow = (): LineItem => ({
   amount: 0,
 })
 
-export function LineItemsEditor({ initialItems, initialTax = 0, initialTaxType, hideUnit = false }: Props) {
+export function LineItemsEditor({ initialItems, initialTax = 0, initialTaxType, hideUnit = false, allowNegative = false }: Props) {
   const [items, setItems] = useState<LineItem[]>(
     initialItems && initialItems.length > 0 ? initialItems : [emptyRow()]
   )
@@ -114,7 +115,7 @@ export function LineItemsEditor({ initialItems, initialTax = 0, initialTaxType, 
                 <p className="text-xs text-gray-400 mb-1">Qty</p>
                 <Input
                   type="number"
-                  min={0}
+                  {...(!allowNegative && { min: 0 })}
                   step="any"
                   placeholder="1"
                   value={item.quantity || ''}
@@ -137,7 +138,7 @@ export function LineItemsEditor({ initialItems, initialTax = 0, initialTaxType, 
                 <p className="text-xs text-gray-400 mb-1">Unit Price</p>
                 <Input
                   type="number"
-                  min={0}
+                  {...(!allowNegative && { min: 0 })}
                   step="any"
                   placeholder="0.00"
                   value={item.unit_price || ''}
@@ -168,7 +169,7 @@ export function LineItemsEditor({ initialItems, initialTax = 0, initialTaxType, 
             />
             <Input
               type="number"
-              min={0}
+              {...(!allowNegative && { min: 0 })}
               step="any"
               placeholder="1"
               value={item.quantity || ''}
@@ -185,7 +186,7 @@ export function LineItemsEditor({ initialItems, initialTax = 0, initialTaxType, 
             )}
             <Input
               type="number"
-              min={0}
+              {...(!allowNegative && { min: 0 })}
               step="any"
               placeholder="0.00"
               value={item.unit_price || ''}

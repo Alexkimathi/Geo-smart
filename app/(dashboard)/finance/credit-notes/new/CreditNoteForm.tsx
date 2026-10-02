@@ -21,13 +21,13 @@ interface Props {
   submitLabel?: string
 }
 
-export function InvoiceForm({
+export function CreditNoteForm({
   clients,
   jobs,
   prefill,
   action,
   successRedirect,
-  submitLabel = 'Create Invoice',
+  submitLabel = 'Create Credit Note',
 }: Props) {
   const router = useRouter()
   const [state, formAction, pending] = useActionState(action, {})
@@ -37,7 +37,7 @@ export function InvoiceForm({
       if (successRedirect) {
         router.push(successRedirect)
       } else if (state.docId) {
-        router.push(`/finance/invoices/${state.docId}`)
+        router.push(`/finance/credit-notes/${state.docId}`)
       }
     }
   }, [state.success, state.docId, successRedirect, router])
@@ -55,21 +55,20 @@ export function InvoiceForm({
 
       {/* Due Date */}
       <div className="space-y-1.5 max-w-xs">
-        <Label htmlFor="due_date">Due Date</Label>
-        <Input
-          id="due_date"
-          name="due_date"
-          type="date"
-          defaultValue={prefill?.due_date ?? ''}
-        />
+        <Label htmlFor="due_date">Date</Label>
+        <Input id="due_date" name="due_date" type="date" defaultValue={prefill?.due_date ?? ''} />
       </div>
 
-      {/* Line Items */}
+      {/* Line Items — allowNegative for credit notes */}
       <div>
         <h3 className="text-sm font-semibold text-gray-900 mb-3">Line Items</h3>
+        <p className="text-xs text-gray-500 mb-3">
+          Use negative quantities or unit prices to represent reversals (e.g. qty &minus;1, unit price 50,000).
+        </p>
         <LineItemsEditor
           initialItems={prefill?.line_items}
           initialTax={prefill?.tax ?? 0}
+          allowNegative
         />
       </div>
 
@@ -118,13 +117,13 @@ export function InvoiceForm({
 
       {/* Notes */}
       <div className="space-y-1.5">
-        <Label htmlFor="notes">Notes / Payment Terms</Label>
+        <Label htmlFor="notes">Notes</Label>
         <Textarea
           id="notes"
           name="notes"
           rows={3}
           defaultValue={prefill?.notes ?? ''}
-          placeholder="Payment terms, conditions..."
+          placeholder="Reason for credit note, reference invoice number..."
         />
       </div>
 

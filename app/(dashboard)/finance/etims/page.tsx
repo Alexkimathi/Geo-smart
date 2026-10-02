@@ -16,6 +16,11 @@ const STATUS_COLORS: Record<string, 'gray' | 'blue'> = {
   Final: 'blue',
 }
 
+const DOC_TYPE_COLORS: Record<string, 'blue' | 'yellow'> = {
+  Invoice: 'blue',
+  'Credit Note': 'yellow',
+}
+
 function pageHref(p: number) {
   if (p <= 1) return '/finance/etims'
   return `/finance/etims?page=${p}`
@@ -55,12 +60,20 @@ export default async function EtimsPage({
             KRA eTIMS tax invoices &mdash; {totalCount} document{totalCount !== 1 ? 's' : ''}
           </p>
         </div>
-        <Link href="/finance/etims/new" className="shrink-0">
-          <Button size="sm">
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">New eTIMS Document</span>
-          </Button>
-        </Link>
+        <div className="flex gap-2 shrink-0">
+          <Link href="/finance/etims/new?type=credit-note">
+            <Button size="sm" variant="outline">
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">New Credit Note</span>
+            </Button>
+          </Link>
+          <Link href="/finance/etims/new">
+            <Button size="sm">
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">New eTIMS Document</span>
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {totalCount === 0 ? (
@@ -77,6 +90,7 @@ export default async function EtimsPage({
                   <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Invoice No</th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Date</th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Buyer</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Type</th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Status</th>
                   <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Actions</th>
                 </tr>
@@ -93,6 +107,11 @@ export default async function EtimsPage({
                     <td className="px-4 py-3 text-gray-900">
                       <span className="font-medium">{doc.buyer_name || '—'}</span>
                       {doc.buyer_pin && <span className="ml-1.5 text-xs text-gray-400 font-mono">{doc.buyer_pin}</span>}
+                    </td>
+                    <td className="px-4 py-3">
+                      <Badge variant={DOC_TYPE_COLORS[doc.doc_type ?? 'Invoice'] ?? 'blue'}>
+                        {doc.doc_type ?? 'Invoice'}
+                      </Badge>
                     </td>
                     <td className="px-4 py-3">
                       <Badge variant={STATUS_COLORS[doc.status] ?? 'gray'}>{doc.status}</Badge>

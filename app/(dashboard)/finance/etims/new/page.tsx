@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import { EtimsForm } from '@/components/finance/EtimsForm'
 import { createEtimsDocumentAction } from '../actions'
-import type { Client, LineItem } from '@/types/database'
+import type { Client, EtimsDocType, LineItem } from '@/types/database'
 
 type InvoiceOption = {
   id: string
@@ -13,7 +13,14 @@ type InvoiceOption = {
   clients: Pick<Client, 'id' | 'name' | 'pin'> | null
 }
 
-export default async function NewEtimsPage() {
+export default async function NewEtimsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ type?: string }>
+}) {
+  const { type } = await searchParams
+  const docType: EtimsDocType = type === 'credit-note' ? 'Credit Note' : 'Invoice'
+
   const db = createServiceClient()
 
   const [{ data: clients }, { data: invoices }] = await Promise.all([
@@ -26,6 +33,8 @@ export default async function NewEtimsPage() {
       .limit(100) as unknown as Promise<{ data: InvoiceOption[] | null }>,
   ])
 
+  const isCredit = docType === 'Credit Note'
+
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto">
       <Link href="/finance/etims" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-6">
@@ -33,15 +42,22 @@ export default async function NewEtimsPage() {
       </Link>
 
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">New eTIMS Document</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Create a KRA eTIMS compliant tax invoice</p>
+        <h1 className="text-2xl font-bold text-gray-900">
+          {isCredit ? 'New eTIMS Credit Note' : 'New eTIMS Document'}
+        </h1>
+        <p className="text-sm text-gray-500 mt-0.5">
+          {isCredit
+            ? 'Create a KRA eTIMS compliant credit note'
+            : 'Create a KRA eTIMS compliant tax invoice'}
+        </p>
       </div>
 
       <EtimsForm
         clients={clients ?? []}
-        invoices={invoices ?? []}
+        invoices={isCredit ? [] : (invoices ?? [])}
         action={createEtimsDocumentAction}
-        submitLabel="Create eTIMS Document"
+        submitLabel={isCredit ? 'Create Credit Note' : 'Create eTIMS Document'}
+        docType={docType}
       />
     </div>
   )

@@ -95,6 +95,7 @@ export default async function EtimssPrintPage({
 
   const { rows: taxRows, grand } = calcTax(doc.line_items)
   const dtStr = formatEtimsDatetime(doc.invoice_date)
+  const label = doc.doc_type === 'Credit Note' ? 'CREDIT NOTE' : 'INVOICE'
 
   return (
     <div className="print-outer" style={{ minHeight: '100vh', background: '#e5e5e5', fontFamily: '"Times New Roman", Times, serif' }}>
@@ -129,32 +130,32 @@ export default async function EtimssPrintPage({
               Official layout: [FROM] [TO]          [INVOICE NO]
           ════════════════════════════════════════════════ */}
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 14, fontSize: 11 }}>
-            {/* INVOICE FROM */}
+            {/* INVOICE/CREDIT NOTE FROM */}
             <div style={{
               border: '1px solid #000', padding: '8px 10px',
               width: 210, flexShrink: 0, lineHeight: 1.6,
             }}>
-              <div style={{ fontWeight: 700, marginBottom: 2 }}>INVOICE FROM</div>
+              <div style={{ fontWeight: 700, marginBottom: 2 }}>{label} FROM</div>
               <div>PIN: {doc.seller_pin}</div>
               <div>NAME: {doc.seller_name}</div>
             </div>
 
-            {/* INVOICE TO */}
+            {/* INVOICE/CREDIT NOTE TO */}
             <div style={{
               border: '1px solid #000', padding: '8px 10px',
               width: 210, flexShrink: 0, lineHeight: 1.6,
             }}>
-              <div style={{ fontWeight: 700, marginBottom: 2 }}>INVOICE TO</div>
+              <div style={{ fontWeight: 700, marginBottom: 2 }}>{label} TO</div>
               <div>PIN: {doc.buyer_pin || '—'}</div>
               <div>NAME: {doc.buyer_name || '—'}</div>
             </div>
 
-            {/* INVOICE NO — pushed to the right edge */}
+            {/* INVOICE/CREDIT NOTE NO — pushed to the right edge */}
             <div style={{
               border: '1px solid #000', padding: '8px 10px',
               marginLeft: 'auto', flexShrink: 0, lineHeight: 1.6, minWidth: 240,
             }}>
-              <div style={{ marginBottom: 2 }}>INVOICE NO: {doc.invoice_no}</div>
+              <div style={{ marginBottom: 2 }}>{label} NO: {doc.invoice_no}</div>
               <div>Date : {dtStr}</div>
             </div>
           </div>

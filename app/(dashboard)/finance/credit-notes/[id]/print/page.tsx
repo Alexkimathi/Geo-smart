@@ -4,7 +4,7 @@ import { formatDate, formatCurrency } from '@/lib/utils'
 import { PrintButton } from '@/components/finance/PrintButton'
 import type { FinanceDocumentWithClient } from '@/types/database'
 
-export default async function InvoicePrintPage({
+export default async function CreditNotePrintPage({
   params,
 }: {
   params: Promise<{ id: string }>
@@ -16,7 +16,7 @@ export default async function InvoicePrintPage({
     .from('finance_documents')
     .select('*, clients(id, name, company, phone, email)')
     .eq('id', id)
-    .eq('type', 'Invoice')
+    .eq('type', 'Credit Note')
     .single() as unknown as { data: FinanceDocumentWithClient | null }
 
   if (!doc) notFound()
@@ -58,7 +58,7 @@ export default async function InvoicePrintPage({
               {/* Document type */}
               <div className="text-right shrink-0">
                 <h2 className="text-3xl font-extrabold uppercase" style={{ color: '#B91C1C' }}>
-                  INVOICE
+                  CREDIT NOTE
                 </h2>
                 <p className="text-xs text-gray-500 mt-1 font-mono">{doc.doc_no}</p>
               </div>
@@ -86,9 +86,9 @@ export default async function InvoicePrintPage({
                 </div>
                 <div className="text-right text-xs text-gray-600 space-y-1">
                   <p><span className="font-semibold text-gray-700">Date:</span> {formatDate(doc.created_at)}</p>
-                  <p><span className="font-semibold text-gray-700">Invoice No:</span> {doc.doc_no}</p>
+                  <p><span className="font-semibold text-gray-700">Credit Note No:</span> {doc.doc_no}</p>
                   {doc.due_date && (
-                    <p><span className="font-semibold text-gray-700">Due Date:</span> {formatDate(doc.due_date)}</p>
+                    <p><span className="font-semibold text-gray-700">Date:</span> {formatDate(doc.due_date)}</p>
                   )}
                 </div>
               </div>
@@ -118,18 +118,17 @@ export default async function InvoicePrintPage({
               </tbody>
             </table>
 
-            {/* ── Bottom section: Terms + Totals ──────────────────── */}
+            {/* ── Bottom section: Notes + Totals ──────────────────── */}
             <div className="grid grid-cols-2 gap-6 mt-4 mb-6">
-              {/* Business Terms */}
+              {/* Notes + Bank Details */}
               <div>
-                <p className="text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">Business Terms</p>
+                <p className="text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">Notes</p>
                 {doc.notes ? (
                   <p className="text-xs text-gray-600 whitespace-pre-wrap">{doc.notes}</p>
                 ) : (
-                  <p className="text-xs text-gray-400">Payment due upon receipt of invoice.</p>
+                  <p className="text-xs text-gray-400">This credit note offsets the referenced invoice.</p>
                 )}
 
-                {/* Bank Details */}
                 {doc.bank_details && (
                   <div className="mt-4">
                     <p className="text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">Bank Details</p>
@@ -185,9 +184,9 @@ export default async function InvoicePrintPage({
               </div>
             </div>
 
-            {/* ── Thank You ───────────────────────────────────────── */}
+            {/* ── Footer ──────────────────────────────────────────── */}
             <p className="text-center text-base font-extrabold uppercase mt-8 tracking-widest" style={{ color: '#B91C1C' }}>
-              Thank You For Your Business
+              GEO-SMART ENGINEERING &amp; REAL ESTATE CONTRACTORS LIMITED
             </p>
           </div>
         </div>

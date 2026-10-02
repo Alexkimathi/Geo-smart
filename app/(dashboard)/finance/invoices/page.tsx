@@ -90,9 +90,14 @@ export default async function InvoicesPage({
           <h1 className="text-2xl font-bold text-gray-900">Invoices</h1>
           <p className="text-sm text-gray-500 mt-0.5">{totalCount} invoices</p>
         </div>
-        <Link href="/finance/invoices/new" className="shrink-0">
-          <Button><Plus className="w-4 h-4" /><span className="hidden sm:inline">New Invoice</span></Button>
-        </Link>
+        <div className="flex gap-2 shrink-0">
+          <Link href="/finance/credit-notes/new">
+            <Button variant="outline"><Plus className="w-4 h-4" /><span className="hidden sm:inline">New Credit Note</span></Button>
+          </Link>
+          <Link href="/finance/invoices/new">
+            <Button><Plus className="w-4 h-4" /><span className="hidden sm:inline">New Invoice</span></Button>
+          </Link>
+        </div>
       </div>
 
       {/* Job context banner */}

@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Plus, Trash2, FileText } from 'lucide-react'
 import type { EtimsFormState } from '@/app/(dashboard)/finance/etims/actions'
-import type { EtimsDocument, EtimsLineItem, EtimsRate, Client, LineItem } from '@/types/database'
+import type { EtimsDocument, EtimsDocType, EtimsLineItem, EtimsRate, Client, LineItem } from '@/types/database'
 
 type ClientOption = Pick<Client, 'id' | 'name' | 'company' | 'pin'>
 
@@ -25,6 +25,7 @@ interface Props {
   action: (prev: EtimsFormState, formData: FormData) => Promise<EtimsFormState>
   prefill?: EtimsDocument | null
   submitLabel?: string
+  docType?: EtimsDocType
 }
 
 const RATE_OPTIONS: EtimsRate[] = ['NV', '16%', '0%', 'Ex.']
@@ -54,7 +55,7 @@ function fmt(n: number) {
   return n.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-export function EtimsForm({ clients, invoices = [], action, prefill, submitLabel = 'Save Document' }: Props) {
+export function EtimsForm({ clients, invoices = [], action, prefill, submitLabel = 'Save Document', docType = 'Invoice' }: Props) {
   const router = useRouter()
   const [state, formAction, pending] = useActionState(action, {})
   const [items, setItems] = useState<EtimsLineItem[]>(() =>
@@ -134,6 +135,14 @@ export function EtimsForm({ clients, invoices = [], action, prefill, submitLabel
     <form action={formAction} className="space-y-8">
       {/* Serialised line items — read by the server action */}
       <input type="hidden" name="line_items" value={JSON.stringify(items)} />
+      <input type="hidden" name="doc_type" value={prefill?.doc_type ?? docType} />
+
+      {/* Doc type banner for credit notes */}
+      {(prefill?.doc_type ?? docType) === 'Credit Note' && (
+        <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800 font-medium">
+          Credit Note — use negative quantities or unit prices to represent reversals.
+        </div>
+      )}
 
       {/* ── Import from Invoice ─────────────────────────── */}
       {invoices.length > 0 && (
@@ -275,12 +284,12 @@ export function EtimsForm({ clients, invoices = [], action, prefill, submitLabel
                       className="w-full h-8 rounded border border-gray-200 px-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
                   </td>
                   <td className="px-2 py-1.5">
-                    <input type="number" value={item.qty} min={0} step="any"
+                    <input type="number" value={item.qty} step="any"
                       onChange={e => updateItem(i, 'qty', parseFloat(e.target.value) || 0)}
                       className="w-20 h-8 rounded border border-gray-200 px-2 text-sm text-right focus:outline-none focus:ring-1 focus:ring-blue-500" />
                   </td>
                   <td className="px-2 py-1.5">
-                    <input type="number" value={item.unit_price} min={0} step="any"
+                    <input type="number" value={item.unit_price} step="any"
                       onChange={e => updateItem(i, 'unit_price', parseFloat(e.target.value) || 0)}
                       className="w-28 h-8 rounded border border-gray-200 px-2 text-sm text-right focus:outline-none focus:ring-1 focus:ring-blue-500" />
                   </td>

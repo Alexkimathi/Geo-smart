@@ -10,7 +10,7 @@ export type JobStatusSurvey = 'New' | 'In Progress' | 'QA' | 'Delivered' | 'Paid
 export type JobStatusConstruction = 'Ongoing' | 'Completed' | 'Handover' | 'Tender' | 'On Hold'
 export type EquipmentType = 'total_station' | 'gps' | 'level' | 'drone' | 'vehicle' | 'material' | 'tool' | 'other'
 export type EquipmentCondition = 'good' | 'fair' | 'poor' | 'under_maintenance' | 'retired'
-export type FinanceDocType = 'Invoice' | 'Quotation'
+export type FinanceDocType = 'Invoice' | 'Quotation' | 'Credit Note'
 export type FinanceDocStatus = 'Draft' | 'Sent' | 'Paid' | 'Overdue'
 
 export interface Profile {
@@ -416,6 +416,7 @@ export interface ReservationDocument {
 
 export type EtimsRate = 'NV' | '16%' | '0%' | 'Ex.'
 export type EtimsStatus = 'Draft' | 'Final'
+export type EtimsDocType = 'Invoice' | 'Credit Note'
 
 export interface EtimsLineItem {
   item_code: string
@@ -443,6 +444,7 @@ export interface EtimsDocument {
   internal_data: string | null
   receipt_signature: string | null
   qr_code_data: string | null
+  doc_type: EtimsDocType
   status: EtimsStatus
   created_by: string | null
   created_at: string

@@ -24,6 +24,7 @@ const etimsDocumentSchema = z.object({
   receipt_signature: z.string().optional(),
   qr_code_data: z.string().optional(),
   status: z.enum(['Draft', 'Final']).default('Draft'),
+  doc_type: z.enum(['Invoice', 'Credit Note']).default('Invoice'),
 })
 
 export async function createEtimsDocumentAction(
@@ -41,7 +42,7 @@ export async function createEtimsDocumentAction(
   const {
     invoice_no, invoice_date, seller_pin, seller_name,
     client_id, buyer_pin, buyer_name, line_items,
-    scu_id, cu_invoice_no, internal_data, receipt_signature, qr_code_data, status,
+    scu_id, cu_invoice_no, internal_data, receipt_signature, qr_code_data, status, doc_type,
   } = parsed.data
 
   const db = createServiceClient()
@@ -56,7 +57,7 @@ export async function createEtimsDocumentAction(
       internal_data: internal_data || null,
       receipt_signature: receipt_signature || null,
       qr_code_data: qr_code_data || null,
-      status, created_by: user.id,
+      status, doc_type, created_by: user.id,
     })
     .select('id').single()
 
@@ -82,7 +83,7 @@ export async function updateEtimsDocumentAction(
   const {
     invoice_no, invoice_date, seller_pin, seller_name,
     client_id, buyer_pin, buyer_name, line_items,
-    scu_id, cu_invoice_no, internal_data, receipt_signature, qr_code_data, status,
+    scu_id, cu_invoice_no, internal_data, receipt_signature, qr_code_data, status, doc_type,
   } = parsed.data
 
   const db = createServiceClient()
@@ -97,7 +98,7 @@ export async function updateEtimsDocumentAction(
       internal_data: internal_data || null,
       receipt_signature: receipt_signature || null,
       qr_code_data: qr_code_data || null,
-      status, updated_at: new Date().toISOString(),
+      status, doc_type, updated_at: new Date().toISOString(),
     })
     .eq('id', id)
 

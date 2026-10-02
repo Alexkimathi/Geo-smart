@@ -14,6 +14,11 @@ const STATUS_COLORS: Record<string, 'gray' | 'blue'> = {
   Final: 'blue',
 }
 
+const DOC_TYPE_COLORS: Record<string, 'blue' | 'yellow'> = {
+  Invoice: 'blue',
+  'Credit Note': 'yellow',
+}
+
 function fmt(n: number) {
   return n.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
@@ -56,6 +61,8 @@ export default async function EtimsDetailPage({
     { taxable: 0, tax: 0, total: 0 }
   )
 
+  const docLabel = doc.doc_type === 'Credit Note' ? 'Credit Note' : 'Invoice'
+
   const invoiceDateDisplay = new Date(doc.invoice_date).toLocaleString('en-KE', {
     year: 'numeric', month: 'short', day: '2-digit',
     hour: '2-digit', minute: '2-digit',
@@ -74,6 +81,9 @@ export default async function EtimsDetailPage({
             <h1 className="text-2xl font-bold font-mono text-gray-900">{doc.invoice_no}</h1>
             <Badge variant={STATUS_COLORS[doc.status] ?? 'gray'} className="text-sm px-3 py-1">
               {doc.status}
+            </Badge>
+            <Badge variant={DOC_TYPE_COLORS[doc.doc_type ?? 'Invoice'] ?? 'blue'} className="text-sm px-3 py-1">
+              {doc.doc_type ?? 'Invoice'}
             </Badge>
           </div>
           <p className="text-sm text-gray-500">{invoiceDateDisplay}</p>
@@ -102,17 +112,17 @@ export default async function EtimsDetailPage({
           <div className="bg-white rounded-xl border border-gray-200 p-5">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
               <div>
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Invoice From</p>
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{docLabel} From</p>
                 <p className="font-medium text-gray-900">{doc.seller_name}</p>
                 <p className="text-gray-500 font-mono text-xs mt-0.5">PIN: {doc.seller_pin}</p>
               </div>
               <div>
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Invoice To</p>
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{docLabel} To</p>
                 <p className="font-medium text-gray-900">{doc.buyer_name || '—'}</p>
                 <p className="text-gray-500 font-mono text-xs mt-0.5">PIN: {doc.buyer_pin || '—'}</p>
               </div>
               <div>
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Invoice Info</p>
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{docLabel} Info</p>
                 <p className="text-gray-700"><span className="font-medium">No:</span> {doc.invoice_no}</p>
                 <p className="text-gray-500 text-xs mt-0.5">{invoiceDateDisplay}</p>
               </div>
@@ -243,7 +253,7 @@ export default async function EtimsDetailPage({
                 </dd>
               </div>
               <div>
-                <dt className="text-xs text-gray-400 uppercase tracking-wide">Invoice Date</dt>
+                <dt className="text-xs text-gray-400 uppercase tracking-wide">{docLabel} Date</dt>
                 <dd className="font-medium text-gray-900 mt-0.5">{invoiceDateDisplay}</dd>
               </div>
               <div>

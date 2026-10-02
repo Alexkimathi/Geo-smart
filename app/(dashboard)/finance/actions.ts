@@ -75,7 +75,9 @@ async function insertFinanceDoc(
   }
 ): Promise<{ id: string } | { error: string }> {
   const year = new Date().getFullYear()
-  const prefix = type === 'Invoice' ? `INV-${year}-` : `QT-${year}-`
+  const prefix = type === 'Invoice' ? `INV-${year}-`
+               : type === 'Credit Note' ? `CN-${year}-`
+               : `QT-${year}-`
 
   const { data: maxRow } = await db
     .from('finance_documents').select('doc_no').eq('type', type)
@@ -251,6 +253,132 @@ export async function updateDocumentAction(
   return { success: true, docId: id }
 }
 
+// ─── Credit Note Schemas & Helpers ────────────────────────
+const creditNoteLineItemSchema = z.object({
+  description: z.string().min(1),
+  quantity: z.coerce.number(),
+  unit: z.string().default(''),
+  unit_price: z.coerce.number(),
+  amount: z.coerce.number(),
+})
+
+function calcCreditNoteTotals(lineItems: unknown[], taxValue: number, taxType: 'percent' | 'amount' = 'percent') {
+  const items = lineItems.map((i) => creditNoteLineItemSchema.safeParse(i))
+  const subtotal = items.reduce((sum, r) => sum + (r.success ? r.data.amount : 0), 0)
+  const taxAmount = taxType === 'percent' ? subtotal * (taxValue / 100) : taxValue
+  const total = subtotal + taxAmount
+  return { amount: subtotal, total }
+}
+
+export async function createCreditNoteAction(
+  _prev: FinanceFormState,
+  formData: FormData
+): Promise<FinanceFormState> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not authenticated' }
+
+  const raw = Object.fromEntries(formData.entries())
+  const parsed = documentSchema.safeParse(raw)
+  if (!parsed.success) return { error: parsed.error.issues[0].message }
+
+  const {
+    tax, tax_type, line_items, client_id, job_type, job_id, due_date, notes,
+    quote_to, reference_no,
+    bank_account_no, bank_name, bank_branch, bank_currency,
+    bank_swift_code, bank_code, bank_branch_code,
+  } = parsed.data
+  const { amount, total } = calcCreditNoteTotals(line_items as unknown[], tax, tax_type)
+
+  const hasBankDetails = bank_account_no || bank_name || bank_branch || bank_currency || bank_swift_code || bank_code || bank_branch_code
+  const bank_details = hasBankDetails ? {
+    account_no: bank_account_no || null,
+    bank_name: bank_name || null,
+    branch: bank_branch || null,
+    currency: bank_currency || null,
+    swift_code: bank_swift_code || null,
+    bank_code: bank_code || null,
+    branch_code: bank_branch_code || null,
+  } : null
+
+  const db = createServiceClient()
+  const result = await insertFinanceDoc(db, 'Credit Note', {
+    client_id: client_id || null,
+    job_type: job_type || null,
+    job_id: job_id || null,
+    due_date: due_date || null,
+    tax, amount, total,
+    line_items,
+    notes: notes || null,
+    created_by: user.id,
+    quote_to: quote_to || null,
+    reference_no: reference_no || null,
+    bank_details,
+  })
+  if ('error' in result) return { error: result.error }
+
+  revalidatePath('/finance/credit-notes')
+  return { success: true, docId: result.id }
+}
+
+export async function updateCreditNoteAction(
+  id: string,
+  _prev: FinanceFormState,
+  formData: FormData
+): Promise<FinanceFormState> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not authenticated' }
+
+  const raw = Object.fromEntries(formData.entries())
+  const parsed = documentSchema.safeParse(raw)
+  if (!parsed.success) return { error: parsed.error.issues[0].message }
+
+  const {
+    tax, tax_type, line_items, client_id, job_type, job_id, due_date, notes,
+    quote_to, reference_no,
+    bank_account_no, bank_name, bank_branch, bank_currency,
+    bank_swift_code, bank_code, bank_branch_code,
+  } = parsed.data
+  const { amount, total } = calcCreditNoteTotals(line_items as unknown[], tax, tax_type)
+
+  const hasBankDetails = bank_account_no || bank_name || bank_branch || bank_currency || bank_swift_code || bank_code || bank_branch_code
+  const bank_details = hasBankDetails ? {
+    account_no: bank_account_no || null,
+    bank_name: bank_name || null,
+    branch: bank_branch || null,
+    currency: bank_currency || null,
+    swift_code: bank_swift_code || null,
+    bank_code: bank_code || null,
+    branch_code: bank_branch_code || null,
+  } : null
+
+  const db = createServiceClient()
+  const { error } = await db
+    .from('finance_documents')
+    .update({
+      client_id: client_id || null,
+      job_type: job_type || null,
+      job_id: job_id || null,
+      due_date: due_date || null,
+      tax,
+      amount,
+      total,
+      line_items,
+      notes: notes || null,
+      quote_to: quote_to || null,
+      reference_no: reference_no || null,
+      bank_details,
+    })
+    .eq('id', id)
+
+  if (error) return { error: error.message }
+
+  revalidatePath('/finance/credit-notes')
+  revalidatePath(`/finance/credit-notes/${id}`)
+  return { success: true, docId: id }
+}
+
 export async function updateDocumentStatusAction(
   id: string,
   status: FinanceDocStatus
@@ -367,6 +495,7 @@ export async function deleteDocumentAction(id: string): Promise<FinanceFormState
 
   revalidatePath('/finance/quotations')
   revalidatePath('/finance/invoices')
+  revalidatePath('/finance/credit-notes')
   return { success: true }
 }
 
