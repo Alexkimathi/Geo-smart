@@ -7,13 +7,14 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { LineItemsEditor } from '@/components/finance/LineItemsEditor'
 import { JobSelector } from '@/components/finance/JobSelector'
-import type { Client, FinanceDocument, QuoteBankDetails } from '@/types/database'
+import type { Client, FinanceDocument, BankAccount } from '@/types/database'
 import type { JobOption } from '@/components/finance/JobSelector'
 import type { FinanceFormState } from '@/app/(dashboard)/finance/actions'
 
 interface Props {
   clients: Pick<Client, 'id' | 'name' | 'company'>[]
   jobs: JobOption[]
+  bankAccounts: Pick<BankAccount, 'id' | 'account_name' | 'bank_name' | 'account_no'>[]
   quotation?: FinanceDocument
   action: (prev: FinanceFormState, formData: FormData) => Promise<FinanceFormState>
   successRedirect?: string   // edit mode: known ahead of time
@@ -23,6 +24,7 @@ interface Props {
 export function QuotationForm({
   clients,
   jobs,
+  bankAccounts,
   quotation,
   action,
   successRedirect,
@@ -40,8 +42,6 @@ export function QuotationForm({
       }
     }
   }, [state.success, state.docId, successRedirect, router])
-
-  const bd: QuoteBankDetails | null = quotation?.bank_details ?? null
 
   return (
     <form action={formAction} className="space-y-6">
@@ -99,45 +99,28 @@ export function QuotationForm({
           initialItems={quotation?.line_items}
           initialTax={quotation?.tax ?? 0}
           hideUnit
+          autoVatFromProfessionFee
         />
       </div>
 
       {/* ── Bank Details ── */}
-      <div className="border border-gray-200 rounded-lg p-4 space-y-4">
-        <div>
-          <h3 className="text-sm font-semibold text-gray-900">Payment / Bank Details</h3>
-          <p className="text-xs text-gray-400 mt-0.5">These will appear on the printed quotation. Fill in for this document only.</p>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="bank_account_no">Account No</Label>
-            <Input id="bank_account_no" name="bank_account_no" placeholder="e.g. 0310280133688" defaultValue={bd?.account_no ?? ''} />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="bank_currency">Currency</Label>
-            <Input id="bank_currency" name="bank_currency" placeholder="e.g. KSH" defaultValue={bd?.currency ?? ''} />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="bank_name">Bank Name</Label>
-            <Input id="bank_name" name="bank_name" placeholder="e.g. EQUITY BANK (KENYA) Ltd" defaultValue={bd?.bank_name ?? ''} />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="bank_branch">Branch</Label>
-            <Input id="bank_branch" name="bank_branch" placeholder="e.g. NGARA" defaultValue={bd?.branch ?? ''} />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="bank_swift_code">SWIFT Code</Label>
-            <Input id="bank_swift_code" name="bank_swift_code" placeholder="e.g. EQBLKENA" defaultValue={bd?.swift_code ?? ''} />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="bank_code">Bank Code</Label>
-            <Input id="bank_code" name="bank_code" placeholder="e.g. 068" defaultValue={bd?.bank_code ?? ''} />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="bank_branch_code">Branch Code</Label>
-            <Input id="bank_branch_code" name="bank_branch_code" placeholder="e.g. 031" defaultValue={bd?.branch_code ?? ''} />
-          </div>
-        </div>
+      <div className="border border-gray-200 rounded-lg p-4 space-y-3">
+        <h3 className="text-sm font-semibold text-gray-900">Payment / Bank Details</h3>
+        <select
+          name="bank_account_id"
+          defaultValue={quotation?.bank_details ? '' : ''}
+          className="flex w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">— Select bank account —</option>
+          {bankAccounts.map(ba => (
+            <option key={ba.id} value={ba.id}>
+              {ba.account_name} · {ba.bank_name} · {ba.account_no}
+            </option>
+          ))}
+        </select>
+        {bankAccounts.length === 0 && (
+          <p className="text-xs text-amber-600">No bank accounts set up yet. Ask an admin to add one in Settings → Bank Accounts.</p>
+        )}
       </div>
 
       {/* ── Notes ── */}

@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import { InvoiceForm } from '../../new/InvoiceForm'
 import { updateDocumentAction } from '@/app/(dashboard)/finance/actions'
-import type { Client, SurveyJob, ConstructionJob, FinanceDocument } from '@/types/database'
+import type { Client, SurveyJob, ConstructionJob, FinanceDocument, BankAccount } from '@/types/database'
 import type { JobOption } from '@/components/finance/JobSelector'
 
 export default async function EditInvoicePage({
@@ -15,7 +15,7 @@ export default async function EditInvoicePage({
   const { id } = await params
   const db = createServiceClient()
 
-  const [{ data: doc }, { data: clients }, { data: surveyJobs }, { data: constructionJobs }] =
+  const [{ data: doc }, { data: clients }, { data: surveyJobs }, { data: constructionJobs }, { data: bankAccounts }] =
     await Promise.all([
       db
         .from('finance_documents')
@@ -39,6 +39,14 @@ export default async function EditInvoicePage({
         .eq('is_archived', false)
         .order('created_at', { ascending: false }) as unknown as Promise<{
         data: Pick<ConstructionJob, 'id' | 'job_no' | 'project_name' | 'project_type' | 'client_id'>[] | null
+      }>,
+      db
+        .from('bank_accounts')
+        .select('id, account_name, bank_name, account_no')
+        .eq('is_active', true)
+        .order('sort_order')
+        .order('account_name') as unknown as Promise<{
+        data: Pick<BankAccount, 'id' | 'account_name' | 'bank_name' | 'account_no'>[] | null
       }>,
     ])
 
@@ -77,6 +85,7 @@ export default async function EditInvoicePage({
         <InvoiceForm
           clients={clients ?? []}
           jobs={jobs}
+          bankAccounts={bankAccounts ?? []}
           prefill={doc}
           action={updateDocumentAction.bind(null, id)}
           successRedirect={`/finance/invoices/${id}`}

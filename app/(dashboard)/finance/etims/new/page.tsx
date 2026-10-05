@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import { EtimsForm } from '@/components/finance/EtimsForm'
 import { createEtimsDocumentAction } from '../actions'
-import type { Client, EtimsDocType, LineItem } from '@/types/database'
+import type { Client, EtimsDocType, LineItem, BankAccount } from '@/types/database'
 
 type InvoiceOption = {
   id: string
@@ -23,7 +23,7 @@ export default async function NewEtimsPage({
 
   const db = createServiceClient()
 
-  const [{ data: clients }, { data: invoices }] = await Promise.all([
+  const [{ data: clients }, { data: invoices }, { data: bankAccounts }] = await Promise.all([
     db.from('clients').select('id, name, company, pin').order('name') as unknown as
       Promise<{ data: Pick<Client, 'id' | 'name' | 'company' | 'pin'>[] | null }>,
     db.from('finance_documents')
@@ -31,6 +31,13 @@ export default async function NewEtimsPage({
       .eq('type', 'Invoice')
       .order('created_at', { ascending: false })
       .limit(100) as unknown as Promise<{ data: InvoiceOption[] | null }>,
+    db.from('bank_accounts')
+      .select('id, account_name, bank_name, account_no')
+      .eq('is_active', true)
+      .order('sort_order')
+      .order('account_name') as unknown as Promise<{
+      data: Pick<BankAccount, 'id' | 'account_name' | 'bank_name' | 'account_no'>[] | null
+    }>,
   ])
 
   const isCredit = docType === 'Credit Note'
@@ -55,6 +62,7 @@ export default async function NewEtimsPage({
       <EtimsForm
         clients={clients ?? []}
         invoices={isCredit ? [] : (invoices ?? [])}
+        bankAccounts={bankAccounts ?? []}
         action={createEtimsDocumentAction}
         submitLabel={isCredit ? 'Create Credit Note' : 'Create eTIMS Document'}
         docType={docType}

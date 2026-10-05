@@ -15,6 +15,7 @@ const etimsDocumentSchema = z.object({
   client_id: z.string().optional(),
   buyer_pin: z.string().default(''),
   buyer_name: z.string().min(1, 'Buyer name is required'),
+  bank_account_id: z.string().optional(),
   line_items: z.string().transform((v) => {
     try { return JSON.parse(v) } catch { return [] }
   }),
@@ -41,17 +42,33 @@ export async function createEtimsDocumentAction(
 
   const {
     invoice_no, invoice_date, seller_pin, seller_name,
-    client_id, buyer_pin, buyer_name, line_items,
+    client_id, buyer_pin, buyer_name, bank_account_id, line_items,
     scu_id, cu_invoice_no, internal_data, receipt_signature, qr_code_data, status, doc_type,
   } = parsed.data
 
   const db = createServiceClient()
+  let bank_details = null
+  if (bank_account_id) {
+    const { data: ba } = await db.from('bank_accounts').select('*').eq('id', bank_account_id).single()
+    if (ba) {
+      bank_details = {
+        account_no: ba.account_no,
+        bank_name: ba.bank_name,
+        branch: ba.branch,
+        currency: ba.currency,
+        swift_code: ba.swift_code,
+        bank_code: ba.bank_code,
+        branch_code: ba.branch_code,
+      }
+    }
+  }
+
   const { data, error } = await db
     .from('etims_documents')
     .insert({
       invoice_no, invoice_date, seller_pin, seller_name,
       client_id: client_id || null,
-      buyer_pin, buyer_name, line_items,
+      buyer_pin, buyer_name, bank_details, line_items,
       scu_id: scu_id || null,
       cu_invoice_no: cu_invoice_no || null,
       internal_data: internal_data || null,
@@ -82,17 +99,33 @@ export async function updateEtimsDocumentAction(
 
   const {
     invoice_no, invoice_date, seller_pin, seller_name,
-    client_id, buyer_pin, buyer_name, line_items,
+    client_id, buyer_pin, buyer_name, bank_account_id, line_items,
     scu_id, cu_invoice_no, internal_data, receipt_signature, qr_code_data, status, doc_type,
   } = parsed.data
 
   const db = createServiceClient()
+  let bank_details = null
+  if (bank_account_id) {
+    const { data: ba } = await db.from('bank_accounts').select('*').eq('id', bank_account_id).single()
+    if (ba) {
+      bank_details = {
+        account_no: ba.account_no,
+        bank_name: ba.bank_name,
+        branch: ba.branch,
+        currency: ba.currency,
+        swift_code: ba.swift_code,
+        bank_code: ba.bank_code,
+        branch_code: ba.branch_code,
+      }
+    }
+  }
+
   const { error } = await db
     .from('etims_documents')
     .update({
       invoice_no, invoice_date, seller_pin, seller_name,
       client_id: client_id || null,
-      buyer_pin, buyer_name, line_items,
+      buyer_pin, buyer_name, bank_details, line_items,
       scu_id: scu_id || null,
       cu_invoice_no: cu_invoice_no || null,
       internal_data: internal_data || null,

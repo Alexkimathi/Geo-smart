@@ -91,6 +91,7 @@ const NAV: NavItem[] = [
     children: [
       { label: 'My Account', href: '/settings/account' },
       { label: 'Users', href: '/settings/users', roles: ['admin', 'manager'] as UserRole[] },
+      { label: 'Bank Accounts', href: '/settings/bank-accounts', roles: ['admin', 'manager'] as UserRole[] },
     ],
   },
 ]

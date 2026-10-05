@@ -3,13 +3,13 @@ import { ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
 import { CreditNoteForm } from './CreditNoteForm'
 import { createCreditNoteAction } from '@/app/(dashboard)/finance/actions'
-import type { Client, SurveyJob, ConstructionJob } from '@/types/database'
+import type { Client, SurveyJob, ConstructionJob, BankAccount } from '@/types/database'
 import type { JobOption } from '@/components/finance/JobSelector'
 
 export default async function NewCreditNotePage() {
   const db = createServiceClient()
 
-  const [{ data: clients }, { data: surveyJobs }, { data: constructionJobs }] =
+  const [{ data: clients }, { data: surveyJobs }, { data: constructionJobs }, { data: bankAccounts }] =
     await Promise.all([
       db.from('clients').select('id, name, company').order('name') as unknown as Promise<{
         data: Pick<Client, 'id' | 'name' | 'company'>[] | null
@@ -27,6 +27,14 @@ export default async function NewCreditNotePage() {
         .eq('is_archived', false)
         .order('created_at', { ascending: false }) as unknown as Promise<{
         data: Pick<ConstructionJob, 'id' | 'job_no' | 'project_name' | 'project_type' | 'client_id'>[] | null
+      }>,
+      db
+        .from('bank_accounts')
+        .select('id, account_name, bank_name, account_no')
+        .eq('is_active', true)
+        .order('sort_order')
+        .order('account_name') as unknown as Promise<{
+        data: Pick<BankAccount, 'id' | 'account_name' | 'bank_name' | 'account_no'>[] | null
       }>,
     ])
 
@@ -60,6 +68,7 @@ export default async function NewCreditNotePage() {
         <CreditNoteForm
           clients={clients ?? []}
           jobs={jobs}
+          bankAccounts={bankAccounts ?? []}
           action={createCreditNoteAction}
         />
       </div>

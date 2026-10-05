@@ -172,6 +172,10 @@ export interface BankAccount {
   bank_name: string
   branch: string | null
   account_no: string
+  currency: string | null
+  swift_code: string | null
+  bank_code: string | null
+  branch_code: string | null
   is_active: boolean
   sort_order: number
   created_by: string | null
@@ -439,6 +443,7 @@ export interface EtimsDocument {
   buyer_pin: string
   buyer_name: string
   line_items: EtimsLineItem[]
+  bank_details: QuoteBankDetails | null
   scu_id: string | null
   cu_invoice_no: string | null
   internal_data: string | null

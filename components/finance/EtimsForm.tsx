@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Plus, Trash2, FileText } from 'lucide-react'
 import type { EtimsFormState } from '@/app/(dashboard)/finance/etims/actions'
-import type { EtimsDocument, EtimsDocType, EtimsLineItem, EtimsRate, Client, LineItem } from '@/types/database'
+import type { EtimsDocument, EtimsDocType, EtimsLineItem, EtimsRate, Client, LineItem, BankAccount } from '@/types/database'
 
 type ClientOption = Pick<Client, 'id' | 'name' | 'company' | 'pin'>
 
@@ -22,6 +22,7 @@ type InvoiceOption = {
 interface Props {
   clients: ClientOption[]
   invoices?: InvoiceOption[]
+  bankAccounts?: Pick<BankAccount, 'id' | 'account_name' | 'bank_name' | 'account_no'>[]
   action: (prev: EtimsFormState, formData: FormData) => Promise<EtimsFormState>
   prefill?: EtimsDocument | null
   submitLabel?: string
@@ -55,7 +56,7 @@ function fmt(n: number) {
   return n.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-export function EtimsForm({ clients, invoices = [], action, prefill, submitLabel = 'Save Document', docType = 'Invoice' }: Props) {
+export function EtimsForm({ clients, invoices = [], bankAccounts = [], action, prefill, submitLabel = 'Save Document', docType = 'Invoice' }: Props) {
   const router = useRouter()
   const [state, formAction, pending] = useActionState(action, {})
   const [items, setItems] = useState<EtimsLineItem[]>(() =>
@@ -355,6 +356,26 @@ export function EtimsForm({ clients, invoices = [], action, prefill, submitLabel
             </tbody>
           </table>
         </div>
+      </section>
+
+      {/* ── Bank Details ───────────────────────────────── */}
+      <section className="bg-white rounded-xl border border-gray-200 p-5">
+        <h3 className="text-sm font-semibold text-gray-800 mb-4">Payment / Bank Details</h3>
+        <select
+          name="bank_account_id"
+          defaultValue=""
+          className="flex w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">— Select bank account —</option>
+          {bankAccounts.map(ba => (
+            <option key={ba.id} value={ba.id}>
+              {ba.account_name} · {ba.bank_name} · {ba.account_no}
+            </option>
+          ))}
+        </select>
+        {bankAccounts.length === 0 && (
+          <p className="text-xs text-amber-600 mt-2">No bank accounts set up yet. Ask an admin to add one in Settings → Bank Accounts.</p>
+        )}
       </section>
 
       {/* ── SCU Information ────────────────────────────── */}

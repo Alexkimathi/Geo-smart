@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import { EtimsForm } from '@/components/finance/EtimsForm'
 import { updateEtimsDocumentAction } from '../../actions'
-import type { EtimsDocument, Client } from '@/types/database'
+import type { EtimsDocument, Client, BankAccount } from '@/types/database'
 
 export default async function EditEtimsPage({
   params,
@@ -14,7 +14,7 @@ export default async function EditEtimsPage({
   const { id } = await params
   const db = createServiceClient()
 
-  const [{ data: doc }, { data: clients }] = await Promise.all([
+  const [{ data: doc }, { data: clients }, { data: bankAccounts }] = await Promise.all([
     db
       .from('etims_documents')
       .select('*')
@@ -24,6 +24,14 @@ export default async function EditEtimsPage({
       .from('clients')
       .select('id, name, company, pin')
       .order('name') as unknown as Promise<{ data: Pick<Client, 'id' | 'name' | 'company' | 'pin'>[] | null }>,
+    db
+      .from('bank_accounts')
+      .select('id, account_name, bank_name, account_no')
+      .eq('is_active', true)
+      .order('sort_order')
+      .order('account_name') as unknown as Promise<{
+      data: Pick<BankAccount, 'id' | 'account_name' | 'bank_name' | 'account_no'>[] | null
+    }>,
   ])
 
   if (!doc) notFound()
@@ -43,6 +51,7 @@ export default async function EditEtimsPage({
 
       <EtimsForm
         clients={clients ?? []}
+        bankAccounts={bankAccounts ?? []}
         action={boundAction}
         prefill={doc}
         submitLabel="Save Changes"

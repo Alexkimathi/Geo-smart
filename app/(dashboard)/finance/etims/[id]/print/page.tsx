@@ -260,6 +260,24 @@ export default async function EtimssPrintPage({
                     {'-'.repeat(60)}
                   </div>
 
+                  {doc.bank_details && (
+                    <div style={{ fontSize: 10, lineHeight: 1.6, marginBottom: 4 }}>
+                      <div style={{ fontWeight: 700 }}>PAYMENT DETAILS</div>
+                      {doc.bank_details.bank_name && <div>Bank: {doc.bank_details.bank_name}</div>}
+                      {doc.bank_details.account_no && <div>A/C No: {doc.bank_details.account_no}</div>}
+                      {doc.bank_details.branch && <div>Branch: {doc.bank_details.branch}</div>}
+                      {doc.bank_details.currency && <div>Currency: {doc.bank_details.currency}</div>}
+                      {doc.bank_details.swift_code && <div>SWIFT: {doc.bank_details.swift_code}</div>}
+                      {(doc.bank_details.bank_code || doc.bank_details.branch_code) && (
+                        <div>
+                          {doc.bank_details.bank_code && `Bank Code: ${doc.bank_details.bank_code}`}
+                          {doc.bank_details.bank_code && doc.bank_details.branch_code && ' / '}
+                          {doc.bank_details.branch_code && `Branch Code: ${doc.bank_details.branch_code}`}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <div style={{ fontSize: 10 }}>Powered by eTIMS</div>
                 </td>
 

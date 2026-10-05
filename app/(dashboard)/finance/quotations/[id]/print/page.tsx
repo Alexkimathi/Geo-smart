@@ -22,8 +22,15 @@ export default async function QuotationPrintPage({
   if (!doc) notFound()
 
   const bd = doc.bank_details
-  const taxAmount = doc.total - doc.amount
-  const taxLabel = doc.tax > 0 && doc.tax <= 100 ? `${doc.tax}%` : ''
+
+  const professionFeeTotal = doc.line_items
+    .filter(i => i.description.toLowerCase().includes('profession fee'))
+    .reduce((s, i) => s + i.amount, 0)
+
+  // Always compute VAT from line items so old documents (stored with tax=0) display correctly
+  const taxAmount = professionFeeTotal > 0 ? professionFeeTotal * 0.16 : doc.total - doc.amount
+  const displayTotal = professionFeeTotal > 0 ? doc.amount + taxAmount : doc.total
+  const taxLabel = professionFeeTotal > 0 ? 'VAT 16% (Profession fee)' : (doc.tax > 0 && doc.tax <= 100 ? `${doc.tax}%` : '')
 
   // Recipient display: prefer free-text quote_to, then linked client
   const recipientName = doc.quote_to || doc.clients?.name || null
@@ -212,17 +219,26 @@ export default async function QuotationPrintPage({
                       <td className="px-3 py-1.5 text-gray-600">SUBTOTAL LESS DISCOUNT</td>
                       <td className="px-3 py-1.5 text-right text-gray-800">{formatCurrency(doc.amount)}</td>
                     </tr>
-                    <tr className="border-b border-gray-100">
-                      <td className="px-3 py-1.5 text-gray-600">TAX RATE</td>
-                      <td className="px-3 py-1.5 text-right text-gray-800">{taxLabel || '—'}</td>
-                    </tr>
-                    <tr className="border-b border-gray-100">
-                      <td className="px-3 py-1.5 text-gray-600">TOTAL TAX</td>
-                      <td className="px-3 py-1.5 text-right text-gray-800">{formatCurrency(taxAmount)}</td>
-                    </tr>
+                    {professionFeeTotal > 0 ? (
+                      <tr className="border-b border-gray-100">
+                        <td className="px-3 py-1.5 text-gray-600">VAT 16% <span className="text-xs text-gray-400">(Profession fee)</span></td>
+                        <td className="px-3 py-1.5 text-right text-gray-800">{formatCurrency(taxAmount)}</td>
+                      </tr>
+                    ) : (
+                      <>
+                        <tr className="border-b border-gray-100">
+                          <td className="px-3 py-1.5 text-gray-600">TAX RATE</td>
+                          <td className="px-3 py-1.5 text-right text-gray-800">{taxLabel || '—'}</td>
+                        </tr>
+                        <tr className="border-b border-gray-100">
+                          <td className="px-3 py-1.5 text-gray-600">TOTAL TAX</td>
+                          <td className="px-3 py-1.5 text-right text-gray-800">{formatCurrency(taxAmount)}</td>
+                        </tr>
+                      </>
+                    )}
                     <tr className="bg-gray-100">
                       <td className="px-3 py-2 font-bold text-gray-900 uppercase text-xs tracking-wide">TOTAL</td>
-                      <td className="px-3 py-2 text-right font-bold text-gray-900">{formatCurrency(doc.total)}</td>
+                      <td className="px-3 py-2 text-right font-bold text-gray-900">{formatCurrency(displayTotal)}</td>
                     </tr>
                   </tbody>
                 </table>

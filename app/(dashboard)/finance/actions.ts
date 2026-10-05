@@ -31,13 +31,7 @@ const documentSchema = z.object({
   notes: z.string().optional(),
   quote_to: z.string().optional(),
   reference_no: z.string().optional(),
-  bank_account_no: z.string().optional(),
-  bank_name: z.string().optional(),
-  bank_branch: z.string().optional(),
-  bank_currency: z.string().optional(),
-  bank_swift_code: z.string().optional(),
-  bank_code: z.string().optional(),
-  bank_branch_code: z.string().optional(),
+  bank_account_id: z.string().optional(),
   line_items: z.string().transform((v) => {
     try { return JSON.parse(v) } catch { return [] }
   }),
@@ -155,24 +149,27 @@ export async function createDocumentAction(
 
   const {
     tax, tax_type, line_items, client_id, job_type, job_id, due_date, notes,
-    quote_to, reference_no,
-    bank_account_no, bank_name, bank_branch, bank_currency,
-    bank_swift_code, bank_code, bank_branch_code,
+    quote_to, reference_no, bank_account_id,
   } = parsed.data
   const { amount, total } = calcTotals(line_items as unknown[], tax, tax_type)
 
-  const hasBankDetails = bank_account_no || bank_name || bank_branch || bank_currency || bank_swift_code || bank_code || bank_branch_code
-  const bank_details = hasBankDetails ? {
-    account_no: bank_account_no || null,
-    bank_name: bank_name || null,
-    branch: bank_branch || null,
-    currency: bank_currency || null,
-    swift_code: bank_swift_code || null,
-    bank_code: bank_code || null,
-    branch_code: bank_branch_code || null,
-  } : null
-
   const db = createServiceClient()
+  let bank_details = null
+  if (bank_account_id) {
+    const { data: ba } = await db.from('bank_accounts').select('*').eq('id', bank_account_id).single()
+    if (ba) {
+      bank_details = {
+        account_no: ba.account_no,
+        bank_name: ba.bank_name,
+        branch: ba.branch,
+        currency: ba.currency,
+        swift_code: ba.swift_code,
+        bank_code: ba.bank_code,
+        branch_code: ba.branch_code,
+      }
+    }
+  }
+
   const result = await insertFinanceDoc(db, type, {
     client_id: client_id || null,
     job_type: job_type || null,
@@ -208,24 +205,27 @@ export async function updateDocumentAction(
 
   const {
     tax, tax_type, line_items, client_id, job_type, job_id, due_date, notes,
-    quote_to, reference_no,
-    bank_account_no, bank_name, bank_branch, bank_currency,
-    bank_swift_code, bank_code, bank_branch_code,
+    quote_to, reference_no, bank_account_id,
   } = parsed.data
   const { amount, total } = calcTotals(line_items as unknown[], tax, tax_type)
 
-  const hasBankDetails = bank_account_no || bank_name || bank_branch || bank_currency || bank_swift_code || bank_code || bank_branch_code
-  const bank_details = hasBankDetails ? {
-    account_no: bank_account_no || null,
-    bank_name: bank_name || null,
-    branch: bank_branch || null,
-    currency: bank_currency || null,
-    swift_code: bank_swift_code || null,
-    bank_code: bank_code || null,
-    branch_code: bank_branch_code || null,
-  } : null
-
   const db = createServiceClient()
+  let bank_details = null
+  if (bank_account_id) {
+    const { data: ba } = await db.from('bank_accounts').select('*').eq('id', bank_account_id).single()
+    if (ba) {
+      bank_details = {
+        account_no: ba.account_no,
+        bank_name: ba.bank_name,
+        branch: ba.branch,
+        currency: ba.currency,
+        swift_code: ba.swift_code,
+        bank_code: ba.bank_code,
+        branch_code: ba.branch_code,
+      }
+    }
+  }
+
   const { error } = await db
     .from('finance_documents')
     .update({
@@ -284,24 +284,27 @@ export async function createCreditNoteAction(
 
   const {
     tax, tax_type, line_items, client_id, job_type, job_id, due_date, notes,
-    quote_to, reference_no,
-    bank_account_no, bank_name, bank_branch, bank_currency,
-    bank_swift_code, bank_code, bank_branch_code,
+    quote_to, reference_no, bank_account_id,
   } = parsed.data
   const { amount, total } = calcCreditNoteTotals(line_items as unknown[], tax, tax_type)
 
-  const hasBankDetails = bank_account_no || bank_name || bank_branch || bank_currency || bank_swift_code || bank_code || bank_branch_code
-  const bank_details = hasBankDetails ? {
-    account_no: bank_account_no || null,
-    bank_name: bank_name || null,
-    branch: bank_branch || null,
-    currency: bank_currency || null,
-    swift_code: bank_swift_code || null,
-    bank_code: bank_code || null,
-    branch_code: bank_branch_code || null,
-  } : null
-
   const db = createServiceClient()
+  let bank_details = null
+  if (bank_account_id) {
+    const { data: ba } = await db.from('bank_accounts').select('*').eq('id', bank_account_id).single()
+    if (ba) {
+      bank_details = {
+        account_no: ba.account_no,
+        bank_name: ba.bank_name,
+        branch: ba.branch,
+        currency: ba.currency,
+        swift_code: ba.swift_code,
+        bank_code: ba.bank_code,
+        branch_code: ba.branch_code,
+      }
+    }
+  }
+
   const result = await insertFinanceDoc(db, 'Credit Note', {
     client_id: client_id || null,
     job_type: job_type || null,
@@ -336,24 +339,27 @@ export async function updateCreditNoteAction(
 
   const {
     tax, tax_type, line_items, client_id, job_type, job_id, due_date, notes,
-    quote_to, reference_no,
-    bank_account_no, bank_name, bank_branch, bank_currency,
-    bank_swift_code, bank_code, bank_branch_code,
+    quote_to, reference_no, bank_account_id,
   } = parsed.data
   const { amount, total } = calcCreditNoteTotals(line_items as unknown[], tax, tax_type)
 
-  const hasBankDetails = bank_account_no || bank_name || bank_branch || bank_currency || bank_swift_code || bank_code || bank_branch_code
-  const bank_details = hasBankDetails ? {
-    account_no: bank_account_no || null,
-    bank_name: bank_name || null,
-    branch: bank_branch || null,
-    currency: bank_currency || null,
-    swift_code: bank_swift_code || null,
-    bank_code: bank_code || null,
-    branch_code: bank_branch_code || null,
-  } : null
-
   const db = createServiceClient()
+  let bank_details = null
+  if (bank_account_id) {
+    const { data: ba } = await db.from('bank_accounts').select('*').eq('id', bank_account_id).single()
+    if (ba) {
+      bank_details = {
+        account_no: ba.account_no,
+        bank_name: ba.bank_name,
+        branch: ba.branch,
+        currency: ba.currency,
+        swift_code: ba.swift_code,
+        bank_code: ba.bank_code,
+        branch_code: ba.branch_code,
+      }
+    }
+  }
+
   const { error } = await db
     .from('finance_documents')
     .update({

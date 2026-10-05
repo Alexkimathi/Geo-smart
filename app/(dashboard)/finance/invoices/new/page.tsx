@@ -3,7 +3,7 @@ import { ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
 import { InvoiceForm } from './InvoiceForm'
 import { createDocumentAction } from '@/app/(dashboard)/finance/actions'
-import type { Client, SurveyJob, ConstructionJob, FinanceDocument } from '@/types/database'
+import type { Client, SurveyJob, ConstructionJob, FinanceDocument, BankAccount } from '@/types/database'
 import type { JobOption } from '@/components/finance/JobSelector'
 
 export default async function NewInvoicePage({
@@ -14,7 +14,7 @@ export default async function NewInvoicePage({
   const { from } = await searchParams
   const db = createServiceClient()
 
-  const [{ data: clients }, { data: surveyJobs }, { data: constructionJobs }, quotationResult] =
+  const [{ data: clients }, { data: surveyJobs }, { data: constructionJobs }, quotationResult, { data: bankAccounts }] =
     await Promise.all([
       db.from('clients').select('id, name, company').order('name') as unknown as Promise<{
         data: Pick<Client, 'id' | 'name' | 'company'>[] | null
@@ -41,6 +41,14 @@ export default async function NewInvoicePage({
             .eq('type', 'Quotation')
             .single() as unknown as Promise<{ data: FinanceDocument | null }>)
         : Promise.resolve({ data: null }),
+      db
+        .from('bank_accounts')
+        .select('id, account_name, bank_name, account_no')
+        .eq('is_active', true)
+        .order('sort_order')
+        .order('account_name') as unknown as Promise<{
+        data: Pick<BankAccount, 'id' | 'account_name' | 'bank_name' | 'account_no'>[] | null
+      }>,
     ])
 
   const jobs: JobOption[] = [
@@ -77,6 +85,7 @@ export default async function NewInvoicePage({
         <InvoiceForm
           clients={clients ?? []}
           jobs={jobs}
+          bankAccounts={bankAccounts ?? []}
           prefill={prefill}
           action={createDocumentAction.bind(null, 'Invoice')}
         />

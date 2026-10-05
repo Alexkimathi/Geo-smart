@@ -8,13 +8,14 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { LineItemsEditor } from '@/components/finance/LineItemsEditor'
 import { JobSelector } from '@/components/finance/JobSelector'
-import type { Client, FinanceDocument } from '@/types/database'
+import type { Client, FinanceDocument, BankAccount } from '@/types/database'
 import type { JobOption } from '@/components/finance/JobSelector'
 import type { FinanceFormState } from '@/app/(dashboard)/finance/actions'
 
 interface Props {
   clients: Pick<Client, 'id' | 'name' | 'company'>[]
   jobs: JobOption[]
+  bankAccounts: Pick<BankAccount, 'id' | 'account_name' | 'bank_name' | 'account_no'>[]
   prefill?: FinanceDocument | null
   action: (prev: FinanceFormState, formData: FormData) => Promise<FinanceFormState>
   successRedirect?: string
@@ -24,6 +25,7 @@ interface Props {
 export function CreditNoteForm({
   clients,
   jobs,
+  bankAccounts,
   prefill,
   action,
   successRedirect,
@@ -73,46 +75,23 @@ export function CreditNoteForm({
       </div>
 
       {/* Bank Details */}
-      <div>
-        <h3 className="text-sm font-semibold text-gray-900 mb-3">Bank Details</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="bank_name">Bank Name</Label>
-            <Input
-              id="bank_name"
-              name="bank_name"
-              placeholder="e.g. Equity Bank Kenya"
-              defaultValue={prefill?.bank_details?.bank_name ?? ''}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="bank_account_no">Account No</Label>
-            <Input
-              id="bank_account_no"
-              name="bank_account_no"
-              placeholder="e.g. 0123456789"
-              defaultValue={prefill?.bank_details?.account_no ?? ''}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="bank_branch">Branch</Label>
-            <Input
-              id="bank_branch"
-              name="bank_branch"
-              placeholder="e.g. Westlands"
-              defaultValue={prefill?.bank_details?.branch ?? ''}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="bank_currency">Currency</Label>
-            <Input
-              id="bank_currency"
-              name="bank_currency"
-              placeholder="e.g. KES"
-              defaultValue={prefill?.bank_details?.currency ?? ''}
-            />
-          </div>
-        </div>
+      <div className="border border-gray-200 rounded-lg p-4 space-y-3">
+        <h3 className="text-sm font-semibold text-gray-900">Payment / Bank Details</h3>
+        <select
+          name="bank_account_id"
+          defaultValue=""
+          className="flex w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">— Select bank account —</option>
+          {bankAccounts.map(ba => (
+            <option key={ba.id} value={ba.id}>
+              {ba.account_name} · {ba.bank_name} · {ba.account_no}
+            </option>
+          ))}
+        </select>
+        {bankAccounts.length === 0 && (
+          <p className="text-xs text-amber-600">No bank accounts set up yet. Ask an admin to add one in Settings → Bank Accounts.</p>
+        )}
       </div>
 
       {/* Notes */}

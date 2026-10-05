@@ -15,6 +15,7 @@ interface Props {
   initialTaxType?: TaxType
   hideUnit?: boolean
   allowNegative?: boolean
+  autoVatFromProfessionFee?: boolean
 }
 
 const emptyRow = (): LineItem => ({
@@ -25,7 +26,7 @@ const emptyRow = (): LineItem => ({
   amount: 0,
 })
 
-export function LineItemsEditor({ initialItems, initialTax = 0, initialTaxType, hideUnit = false, allowNegative = false }: Props) {
+export function LineItemsEditor({ initialItems, initialTax = 0, initialTaxType, hideUnit = false, allowNegative = false, autoVatFromProfessionFee = false }: Props) {
   const [items, setItems] = useState<LineItem[]>(
     initialItems && initialItems.length > 0 ? initialItems : [emptyRow()]
   )
@@ -52,7 +53,14 @@ export function LineItemsEditor({ initialItems, initialTax = 0, initialTaxType, 
     setItems((prev) => prev.length === 1 ? prev : prev.filter((_, i) => i !== index))
 
   const subtotal = items.reduce((s, r) => s + r.amount, 0)
-  const taxAmount = taxType === 'percent' ? subtotal * (taxValue / 100) : taxValue
+
+  const professionFeeTotal = autoVatFromProfessionFee
+    ? items.filter(i => i.description.toLowerCase().includes('profession fee')).reduce((s, i) => s + i.amount, 0)
+    : 0
+  const taxAmount = autoVatFromProfessionFee
+    ? professionFeeTotal * 0.16
+    : (taxType === 'percent' ? subtotal * (taxValue / 100) : taxValue)
+
   const total = subtotal + taxAmount
 
   const toggleTaxType = () => {
@@ -73,7 +81,14 @@ export function LineItemsEditor({ initialItems, initialTax = 0, initialTaxType, 
     <div className="space-y-3">
       {/* Hidden payloads for form submission */}
       <input type="hidden" name="line_items" value={JSON.stringify(items)} />
-      <input type="hidden" name="tax_type" value={taxType} />
+      {autoVatFromProfessionFee ? (
+        <>
+          <input type="hidden" name="tax" value={taxAmount} />
+          <input type="hidden" name="tax_type" value="amount" />
+        </>
+      ) : (
+        <input type="hidden" name="tax_type" value={taxType} />
+      )}
 
       {/* Desktop table header (hidden on mobile) */}
       <div
@@ -219,39 +234,46 @@ export function LineItemsEditor({ initialItems, initialTax = 0, initialTaxType, 
           <span>{formatCurrency(subtotal)}</span>
         </div>
 
-        {/* VAT row — single line with % / KES toggle */}
-        <div className="flex items-center justify-between gap-2 text-sm text-gray-600">
-          <span className="whitespace-nowrap">VAT</span>
-          <div className="flex items-center gap-1.5">
-            {/* Toggle: % or KES */}
-            <button
-              type="button"
-              onClick={toggleTaxType}
-              className="flex rounded-md border border-gray-300 overflow-hidden text-xs font-medium shrink-0"
-              title="Switch between percentage and fixed amount"
-            >
-              <span className={`px-2 py-1 transition-colors ${taxType === 'percent' ? 'bg-gray-800 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}>
-                %
-              </span>
-              <span className={`px-2 py-1 transition-colors ${taxType === 'amount' ? 'bg-gray-800 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}>
-                KES
-              </span>
-            </button>
-
-            <Input
-              name="tax"
-              type="number"
-              min={0}
-              max={taxType === 'percent' ? 100 : undefined}
-              step={taxType === 'percent' ? '0.1' : '1'}
-              placeholder={taxType === 'percent' ? '0' : '0.00'}
-              value={taxValue || ''}
-              onChange={(e) => setTaxValue(parseFloat(e.target.value) || 0)}
-              className="h-8 w-24 text-sm text-right"
-            />
-            <span className="text-gray-500 w-24 text-right shrink-0">{formatCurrency(taxAmount)}</span>
+        {/* VAT row */}
+        {autoVatFromProfessionFee ? (
+          <div className="flex justify-between text-sm text-gray-600">
+            <span className="whitespace-nowrap">VAT 16% <span className="text-xs text-gray-400">(Profession fee)</span></span>
+            <span>{formatCurrency(taxAmount)}</span>
           </div>
-        </div>
+        ) : (
+          <div className="flex items-center justify-between gap-2 text-sm text-gray-600">
+            <span className="whitespace-nowrap">VAT</span>
+            <div className="flex items-center gap-1.5">
+              {/* Toggle: % or KES */}
+              <button
+                type="button"
+                onClick={toggleTaxType}
+                className="flex rounded-md border border-gray-300 overflow-hidden text-xs font-medium shrink-0"
+                title="Switch between percentage and fixed amount"
+              >
+                <span className={`px-2 py-1 transition-colors ${taxType === 'percent' ? 'bg-gray-800 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}>
+                  %
+                </span>
+                <span className={`px-2 py-1 transition-colors ${taxType === 'amount' ? 'bg-gray-800 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}>
+                  KES
+                </span>
+              </button>
+
+              <Input
+                name="tax"
+                type="number"
+                min={0}
+                max={taxType === 'percent' ? 100 : undefined}
+                step={taxType === 'percent' ? '0.1' : '1'}
+                placeholder={taxType === 'percent' ? '0' : '0.00'}
+                value={taxValue || ''}
+                onChange={(e) => setTaxValue(parseFloat(e.target.value) || 0)}
+                className="h-8 w-24 text-sm text-right"
+              />
+              <span className="text-gray-500 w-24 text-right shrink-0">{formatCurrency(taxAmount)}</span>
+            </div>
+          </div>
+        )}
 
         <div className="flex justify-between text-sm font-semibold text-gray-900 pt-2 border-t border-gray-100">
           <span>Total</span>
