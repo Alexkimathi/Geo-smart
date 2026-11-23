@@ -17,8 +17,8 @@ const lineItemSchema = z.object({
   description: z.string().min(1),
   quantity: z.coerce.number().min(0),
   unit: z.string().default(''),
-  unit_price: z.coerce.number().min(0),
-  amount: z.coerce.number().min(0),
+  unit_price: z.coerce.number(),
+  amount: z.coerce.number(),
 })
 
 const documentSchema = z.object({

@@ -153,7 +153,6 @@ export function LineItemsEditor({ initialItems, initialTax = 0, initialTaxType, 
                 <p className="text-xs text-gray-400 mb-1">Unit Price</p>
                 <Input
                   type="number"
-                  {...(!allowNegative && { min: 0 })}
                   step="any"
                   placeholder="0.00"
                   value={item.unit_price || ''}
@@ -201,7 +200,6 @@ export function LineItemsEditor({ initialItems, initialTax = 0, initialTaxType, 
             )}
             <Input
               type="number"
-              {...(!allowNegative && { min: 0 })}
               step="any"
               placeholder="0.00"
               value={item.unit_price || ''}
